@@ -1,26 +1,33 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabaseClient";
 
 const QUESTIONS = [
   "Частота комунікації (чинна)",
-  "Частота комунікації (Бажана)",
-  "Наскільки ефективною ви вважаєте комунікацію ?",
-  "Якою б ви хотіли бачити ефективність комунікації ?",
-  "Ваші коментарі щодо комунікації з Frank ?",
+  "Частота комунікації (бажана)",
+  "Наскільки ефективною ви вважаєте комунікацію?",
+  "Якою б ви хотіли бачити ефективність комунікації?",
+  "Ваші коментарі щодо комунікації з користувачем",
 ];
 
-function QuestionsPage() {
+export default function QuestionsPage() {
   const { userName } = useParams();
   const [players, setPlayers] = useState([]);
   const [answers, setAnswers] = useState({});
   const [submitting, setSubmitting] = useState(false);
+  const navigate = useNavigate();
 
   useEffect(() => {
     async function fetchPlayers() {
-      const { data } = await supabase.from("users").select("*");
+      const { data, error } = await supabase.from("users").select("*");
+      if (error) {
+        alert("Помилка завантаження користувачів: " + error.message);
+        return;
+      }
+
       setPlayers(data.filter((p) => p.name !== userName));
     }
+
     fetchPlayers();
   }, [userName]);
 
@@ -56,33 +63,46 @@ function QuestionsPage() {
       }
     }
 
-    const { error } = await supabase.from("answers").insert(payload);
-    if (error) {
-      alert("Ошибка при сохранении: " + error.message);
-    } else {
-      alert("Ответы отправлены!");
+    // Надіслати відповіді
+    const { error: insertError } = await supabase.from("answers").insert(payload);
+
+    if (insertError) {
+      alert("Помилка при збереженні відповідей: " + insertError.message);
+      setSubmitting(false);
+      return;
     }
 
-    setSubmitting(false);
+    // Встановити submitted = true
+    const { error: updateError } = await supabase
+      .from("users")
+      .update({ submitted: true })
+      .eq("name", userName);
+
+    if (updateError) {
+      alert("Помилка оновлення статусу: " + updateError.message);
+      setSubmitting(false);
+      return;
+    }
+
+    navigate("/graph");
   };
 
   return (
-    <div>
-      <h2>Оценка игроков</h2>
+    <div style={{ padding: "20px", maxWidth: "800px", margin: "0 auto" }}>
+      <h2>Оцінка учасників</h2>
       {players.map((player) => (
-        <div key={player.id} style={{ marginBottom: "30px" }}>
+        <div key={player.id} style={{ marginBottom: "40px" }}>
           <h3>{player.name}</h3>
           {QUESTIONS.map((q, index) => (
-            <div key={index} style={{ margin: "5px 0" }}>
-              <label>{q}</label>
+            <div key={index} style={{ margin: "10px 0" }}>
+              <label>{q.replace("користувачем", player.name)}</label>
               {index < 4 ? (
                 <select
                   value={answers[player.id]?.[index] || ""}
-                  onChange={(e) =>
-                    handleChange(player.id, index, e.target.value)
-                  }
+                  onChange={(e) => handleChange(player.id, index, e.target.value)}
+                  style={{ marginLeft: "10px" }}
                 >
-                  <option value="">Оберіть оцінку 1 - 5</option>
+                  <option value="">Оберіть оцінку (1–5)</option>
                   {[1, 2, 3, 4, 5].map((n) => (
                     <option key={n} value={n}>
                       {n}
@@ -92,22 +112,20 @@ function QuestionsPage() {
               ) : (
                 <input
                   type="text"
+                  placeholder="Ваш коментар"
                   value={answers[player.id]?.[index] || ""}
-                  onChange={(e) =>
-                    handleChange(player.id, index, e.target.value)
-                  }
-                  placeholder="Комментар..."
+                  onChange={(e) => handleChange(player.id, index, e.target.value)}
+                  style={{ width: "100%", marginTop: "5px" }}
                 />
               )}
             </div>
           ))}
         </div>
       ))}
+
       <button onClick={handleSubmit} disabled={submitting}>
-        {submitting ? "Отправка..." : "Отправить все ответы"}
+        {submitting ? "Надсилання..." : "Надіслати відповіді"}
       </button>
     </div>
   );
 }
-
-export default QuestionsPage;

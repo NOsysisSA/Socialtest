@@ -12,6 +12,20 @@ export default function JoinPage() {
 
     setLoading(true);
 
+    // 🔸 Проверка: началась ли игра
+    const { data: status, error: statusError } = await supabase
+      .from("test_status")
+      .select("started")
+      .eq("id", 1)
+      .single();
+
+    if (status?.started) {
+      alert("Гра вже почалася. Приєднання заборонене.");
+      setLoading(false);
+      return;
+    }
+
+    // 🔸 Добавление пользователя
     const { data, error } = await supabase
       .from("users")
       .upsert([{ name }])
