@@ -4,7 +4,7 @@ body {
   overflow: hidden;
 }
 
-.lobby-page {
+.graph-page {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -62,50 +62,34 @@ body {
 }
 
 .form-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  padding: 2rem;
+  padding: 1rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  width: 100%;
-  max-width: 400px;
-  text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.2);
-  position: relative;
   z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 .form-heading {
   color: #ffffff;
-  font-size: 2rem;
+  font-size: 2.2rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 1px;
   animation: fadeIn 1s ease-in;
+  text-align: center;
 }
 
-.players-list {
-  width: 100%;
-  max-height: 300px;
-  overflow-y: auto;
-  margin-bottom: 1.5rem;
-}
-
-.list-item {
-  padding: 0.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-  font-size: 1.1rem;
-  color: #ffffff;
-}
-
-.list-item:last-child {
-  border-bottom: none;
-}
-
-button {
-  width: 100%;
-  padding: 0.8rem;
+.reset-button {
+  padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
   background: linear-gradient(45deg, #6b48ff, #00ddeb);
@@ -116,19 +100,9 @@ button {
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
-button:hover:not(:disabled) {
+.reset-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 221, 235, 0.4);
-}
-
-button:disabled {
-  background: #555;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: red;
-  margin-top: 1rem;
 }
 
 @keyframes fadeIn {
@@ -144,16 +118,17 @@ button:disabled {
 
 @media (max-width: 480px) {
   .form-container {
-    padding: 1.5rem;
-    max-width: 90%;
+    padding: 0.75rem;
+    bottom: 10px;
+    right: 10px;
   }
 
   .form-heading {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
   }
 
-  .list-item,
-  button {
+  .reset-button {
+    padding: 0.6rem 1rem;
     font-size: 0.9rem;
   }
 }

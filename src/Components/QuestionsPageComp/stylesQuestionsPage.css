@@ -1,247 +1,278 @@
 body {
-    margin: 0;
-    height: 100vh;
-    overflow: hidden;
+  margin: 0;
+  height: 100vh;
+  overflow: hidden;
 }
 
 .questions-page {
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(45deg, #0a0a23, #1b1b32, #2a2a4b, #3a3a63);
-    background-size: 400%;
-    animation: gradient 15s ease infinite;
-    position: relative;
-    overflow: hidden;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(45deg, #0a0a23, #1b1b32, #2a2a4b, #3a3a63);
+  background-size: 400%;
+  animation: gradient 15s ease infinite;
+  position: relative;
+  overflow: hidden;
 }
 
 @keyframes gradient {
-    0% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
-    100% { background-position: 0% 50%; }
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
 }
 
 .bubbles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
 .bubble {
-    position: absolute;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
-    border-radius: 50%;
-    animation: pulse 6s infinite ease-in-out;
-    opacity: 0.4;
+  position: absolute;
+  background: radial-gradient(
+    circle,
+    rgba(255, 255, 255, 0.3),
+    rgba(255, 255, 255, 0.1)
+  );
+  border-radius: 50%;
+  animation: pulse 6s infinite ease-in-out;
+  opacity: 0.4;
 }
 
 @keyframes pulse {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.5); }
-    100% { transform: scale(1); }
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.5);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
 
 .form-container {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(10px);
-    border-radius: 15px;
-    padding: 2rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    width: 100%;
-    max-width: 700px;
-    text-align: center;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    position: relative;
-    z-index: 1;
-    transition: min-height 0.6s ease-out, height 0.6s ease-out; /* Smoother expansion */
-    min-height: 280px; /* Reduced for more noticeable expansion */
-    height: 280px; /* Explicit height for consistent animation */
-    overflow: hidden; /* Prevent content overflow during animation */
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  width: 100%;
+  max-width: 700px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1;
+  transition: min-height 0.6s ease-out, height 0.6s ease-out;
+  min-height: 280px;
+  height: 280px;
+  overflow: hidden;
 }
 
 .form-container.expanded {
-    min-height: 700px; /* Increased for full visibility */
-    height: 700px; /* Explicit height for animation */
+  min-height: 700px;
+  height: 700px;
 }
 
 .form-heading {
-    color: #ffffff;
-    font-size: 2.2rem;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    animation: fadeIn 1s ease-in;
+  color: #ffffff;
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  animation: fadeIn 1s ease-in;
 }
 
 .form-heading .username {
-    color: #00ddeb;
+  color: #00ddeb;
 }
 
 .players-list {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
 }
 
 .list-item {
-    padding: 0.5rem;
-    font-size: 1.2rem;
-    color: #ffffff;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-    align-items: center;
-    opacity: 0;
-    animation: fadeInContent 0.4s ease-in forwards;
-    animation-delay: 0.2s; /* Delay for content to appear after expansion */
+  padding: 0.5rem;
+  font-size: 1.2rem;
+  color: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  align-items: center;
+  opacity: 0;
+  animation: fadeInContent 0.4s ease-in forwards;
+  animation-delay: 0.2s;
 }
 
 .list-item:first-child {
-    animation-delay: 0s; /* No delay for first question */
+  animation-delay: 0s;
 }
 
 @keyframes fadeInContent {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .list-item label {
-    font-size: 1.2rem;
-    font-weight: 500;
-    word-wrap: break-word;
-    max-width: 100%;
+  font-size: 1.2rem;
+  font-weight: 500;
+  word-wrap: break-word;
+  max-width: 100%;
 }
 
 .button-group {
-    display: flex;
-    gap: 0.5rem;
-    flex-wrap: wrap;
-    justify-content: center;
-    max-width: 100%;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 100%;
 }
 
 .input-item {
-    width: 100%;
-    padding: 0.8rem;
-    margin-bottom: 0.5rem;
-    border: none;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    font-size: 1rem;
-    outline: none;
-    transition: background 0.3s, box-shadow 0.3s;
-    box-sizing: border-box;
+  width: 100%;
+  padding: 0.8rem;
+  margin-bottom: 0.5rem;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+  font-size: 1rem;
+  outline: none;
+  transition: background 0.3s, box-shadow 0.3s;
+  box-sizing: border-box;
 }
 
 .input-item::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .input-item:focus {
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+  background: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
 
 button {
-    width: 100%;
-    padding: 0.8rem;
-    border: none;
-    border-radius: 8px;
-    background: linear-gradient(45deg, #6b48ff, #00ddeb);
-    color: #ffffff;
-    font-size: 1.1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: transform 0.3s, box-shadow 0.3s;
+  width: 100%;
+  padding: 0.8rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(45deg, #6b48ff, #00ddeb);
+  color: #ffffff;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.3s, box-shadow 0.3s;
 }
 
 button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(0, 221, 235, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(0, 221, 235, 0.4);
 }
 
 button:disabled {
-    background: #555;
-    cursor: not-allowed;
+  background: #555;
+  cursor: not-allowed;
 }
 
 .option-btn {
-    padding: 0.5rem;
-    border: 2px solid #6b48ff;
-    border-radius: 50%;
-    background: #555;
-    color: #ffffff;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.3s ease;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  padding: 0.5rem;
+  border: 2px solid #6b48ff;
+  border-radius: 50%;
+  background: #555;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .option-btn:hover:not(.selected) {
-    border-color: #a68bff;
-    box-shadow: 0 0 10px #a68bff;
+  border-color: #a68bff;
+  box-shadow: 0 0 10px #a68bff;
 }
 
 .option-btn.selected {
-    background: #00ddeb;
-    border-color: #00ddeb;
-    box-shadow: 0 0 10px rgba(0, 221, 235, 0.4);
+  background: #00ddeb;
+  border-color: #00ddeb;
+  box-shadow: 0 0 10px rgba(0, 221, 235, 0.4);
 }
 
 .option-btn.boolean {
-    border-radius: 8px;
-    width: auto;
-    padding: 0.5rem 1rem;
-    height: auto;
+  border-radius: 8px;
+  width: auto;
+  padding: 0.5rem 1rem;
+  height: auto;
 }
 
 .error-message {
-    color: #ff5555;
-    margin-top: 1rem;
-    font-size: 1rem;
+  color: #ff5555;
+  margin-top: 1rem;
+  font-size: 1rem;
 }
 
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 480px) {
-    .form-container {
-        padding: 1.5rem;
-        max-width: 90%;
-        min-height: 260px;
-        height: 260px;
-    }
+  .form-container {
+    padding: 1.5rem;
+    max-width: 90%;
+    min-height: 260px;
+    height: 260px;
+  }
 
-    .form-container.expanded {
-        min-height: 650px;
-        height: 650px;
-    }
+  .form-container.expanded {
+    min-height: 650px;
+    height: 650px;
+  }
 
-    .form-heading {
-        font-size: 1.8rem;
-    }
+  .form-heading {
+    font-size: 1.8rem;
+  }
 
-    .list-item, .input-item, button, .option-btn {
-        font-size: 0.9rem;
-    }
+  .list-item,
+  .input-item,
+  button,
+  .option-btn {
+    font-size: 0.9rem;
+  }
 
-    .option-btn {
-        width: 35px;
-        height: 35px;
-    }
+  .option-btn {
+    width: 35px;
+    height: 35px;
+  }
 }
