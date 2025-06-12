@@ -1,253 +1,346 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { db } from "../../firebase";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  getDoc,
+  setDoc,
+  serverTimestamp,
+  updateDoc,
+} from "firebase/firestore";
 import "./stylesQuestionsPage.css";
-
-const QUESTIONS = [
-  "Частота комунікації (чинна)",
-  "Частота комунікації (бажана)",
-  "Насколько эффективною ви вважаєте комунікацію?",
-  "Якою б ви хотіли бачити ефективність комунікації?",
-  "Ваші коментарі щодо комунікації з користувачем",
-];
-
-const RatingButtons = ({ value, onChange, isError }) => {
-  const handleClick = (num) => {
-    onChange(num.toString());
-  };
-
-  return (
-    <div className={`rating-buttons ${isError ? "error" : ""}`}>
-      {[1, 2, 3, 4, 5].map((num) => (
-        <button
-          key={num}
-          onClick={() => handleClick(num)}
-          className={`rating-button ${
-            value === num.toString() ? "selected" : ""
-          }`}
-        >
-          {num}
-        </button>
-      ))}
-    </div>
-  );
-};
 
 export default function QuestionsPage() {
   const { userName } = useParams();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
+  const [currentUser, setCurrentUser] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [errors, setErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [currentTarget, setCurrentTarget] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
-    async function fetchPlayers() {
-      const { data, error } = await supabase.from("users").select("*");
-      if (error) {
-        setErrors({
-          global: "Помилка завантаження користувачів: " + error.message,
-        });
-        return;
+    async function fetchInitialData() {
+      setIsLoading(true);
+      try {
+        const statusDoc = doc(db, "test_status", "status");
+        const statusSnap = await getDoc(statusDoc);
+        if (!statusSnap.exists()) {
+          await setDoc(statusDoc, {
+            started: false,
+            reset_needed: false,
+            participantsSubmitted: 0,
+            totalParticipants: 0,
+          });
+        }
+        const statusData = statusSnap.data();
+        if (!statusData.started) {
+          navigate(`/lobby/${userName}`);
+          return;
+        }
+
+        const q = query(collection(db, "users"));
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const playersData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setPlayers(playersData);
+            setCurrentUser(playersData.find((p) => p.name === userName));
+
+            const firstTarget = playersData.find((p) => p.name !== userName);
+            setCurrentTarget(firstTarget);
+            setIsExpanded(false);
+          },
+          (err) => {
+            setError("Помилка завантаження гравців: " + err.message);
+            console.error("Ошибка загрузки игроков:", err);
+          }
+        );
+      } catch (err) {
+        setError("Помилка завантаження: " + err.message);
+        console.error("Ошибка при загрузке данных:", err);
+      } finally {
+        setIsLoading(false);
       }
-      setPlayers(data.filter((p) => p.name !== userName));
     }
 
-    fetchPlayers();
+    fetchInitialData();
 
-    const userSubscription = supabase
-      .channel("public:users")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "users" },
-        (payload) => {
-          fetchPlayers();
-        }
-      )
-      .subscribe();
+    const answersQuery = query(
+      collection(db, "answers"),
+      where("evaluator_name", "==", userName)
+    );
+    const unsubscribeAnswers = onSnapshot(
+      answersQuery,
+      (snapshot) => {
+        const answersData = {};
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          answersData[data.target_id] = data.responses || {};
+        });
+        setAnswers(answersData);
+      },
+      (err) => {
+        setError("Помилка завантаження відповідей: " + err.message);
+        console.error("Ошибка загрузки ответов:", err);
+      }
+    );
 
-    const statusSubscription = supabase
-      .channel("public:test_status")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "test_status",
-          filter: "id=eq.1",
-        },
-        (payload) => {
-          if (!payload.new.started) {
-            navigate(`/lobby/${userName}`);
-          }
+    const statusDoc = doc(db, "test_status", "status");
+    const unsubscribeStatus = onSnapshot(
+      statusDoc,
+      (snapshot) => {
+        const statusData = snapshot.data();
+        const totalParticipants = statusData.totalParticipants;
+        const submittedCount = statusData.participantsSubmitted;
+
+        if (
+          totalParticipants > 0 &&
+          submittedCount >= totalParticipants * (totalParticipants - 1)
+        ) {
+          navigate("/graph");
         }
-      )
-      .subscribe();
+      },
+      (err) => {
+        console.error("Ошибка отслеживания статуса теста:", err);
+      }
+    );
 
     return () => {
-      supabase.removeChannel(userSubscription);
-      supabase.removeChannel(statusSubscription);
+      unsubscribeAnswers();
+      unsubscribeStatus();
     };
   }, [userName, navigate]);
 
-  useEffect(() => {
-    const bubblesContainer = document.getElementById("bubbles");
-    if (!bubblesContainer) return;
-
-    bubblesContainer.innerHTML = "";
-
-    for (let i = 0; i < 30; i++) {
-      const bubble = document.createElement("div");
-      bubble.classList.add("bubble");
-      const size = Math.random() * 40 + 20;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.left = `${Math.random() * 100}vw`;
-      bubble.style.top = `${Math.random() * 100}vh`;
-      bubble.style.animationDelay = `${Math.random() * 5}s`;
-      bubble.style.animationDuration = `${Math.random() * 4 + 4}s`;
-      bubblesContainer.appendChild(bubble);
-    }
-
-    return () => {
-      bubblesContainer.innerHTML = "";
-    };
-  }, []);
-
-  const handleChange = (targetId, questionIndex, value) => {
+  const handleAnswerChange = (
+    targetId,
+    questionIndex,
+    value,
+    comment,
+    willingToCommunicate
+  ) => {
     setAnswers((prev) => ({
       ...prev,
       [targetId]: {
         ...prev[targetId],
-        [questionIndex]: value,
+        [`${questionIndex}`]: { value, comment, willingToCommunicate },
       },
     }));
-
-    setErrors((prev) => ({
-      ...prev,
-      [targetId]: {
-        ...prev[targetId],
-        [questionIndex]: false,
-      },
-    }));
+    if (questionIndex === 0 && willingToCommunicate) {
+      setIsExpanded(true);
+    } else if (questionIndex === 0 && !willingToCommunicate) {
+      setIsExpanded(false);
+    }
   };
 
-  const handleSubmit = async () => {
-    let hasError = false;
-    const newErrors = {};
+  const handleSubmit = async (targetId) => {
+    setIsLoading(true);
+    try {
+      const willingToCommunicate =
+        answers[targetId]?.["0"]?.willingToCommunicate;
+      if (willingToCommunicate === undefined) {
+        setError("Оберіть 'Так' або 'Ні' перед відправкою");
+        return;
+      }
 
-    for (const player of players) {
-      const targetId = player.id;
-      const response = answers[targetId] || {};
+      const statusDoc = doc(db, "test_status", "status");
+      const statusSnap = await getDoc(statusDoc);
+      const statusData = statusSnap.data();
 
-      newErrors[targetId] = {};
-
-      for (let i = 0; i < QUESTIONS.length; i++) {
-        const val = response[i];
-        const isValid = i < 4 ? !!val && !isNaN(val) : val && val.trim() !== "";
-
-        if (!isValid) {
-          newErrors[targetId][i] = true;
-          hasError = true;
+      const answerDocRef = doc(collection(db, "answers"));
+      const responses = {};
+      for (let i = 0; i < 4; i++) {
+        const answer = answers[targetId]?.[`${i}`] || {
+          value: 0,
+          comment: "",
+          willingToCommunicate: false,
+        };
+        responses[`${i}`] = {
+          value:
+            i === 0
+              ? answer.willingToCommunicate
+                ? 1
+                : 0
+              : answer.value !== undefined
+              ? answer.value
+              : 0,
+          comment:
+            i === 3 ? (answer.comment !== undefined ? answer.comment : "") : "",
+        };
+        if (i === 0) {
+          responses[`${i}`].willingToCommunicate = answer.willingToCommunicate;
         }
       }
-    }
 
-    if (hasError) {
-      setErrors(newErrors);
-      return;
-    }
+      await setDoc(answerDocRef, {
+        evaluator_name: userName,
+        target_id: targetId,
+        responses,
+        created_at: serverTimestamp(),
+      });
 
-    setSubmitting(true);
+      const userDoc = doc(db, "users", currentUser.id);
+      await updateDoc(userDoc, { submitted: true });
+      const submittedCount = statusData.participantsSubmitted + 1;
+      await updateDoc(statusDoc, { participantsSubmitted: submittedCount });
 
-    const payload = [];
-
-    for (const player of players) {
-      const targetId = player.id;
-      const response = answers[targetId];
-
-      for (let i = 0; i < QUESTIONS.length; i++) {
-        payload.push({
-          evaluator_name: userName,
-          target_id: targetId,
-          question_index: i,
-          value: i < 4 ? Number(response[i]) : null,
-          comment: i === 4 ? response[i] : null,
-        });
+      const currentTargets = players.filter((p) => p.name !== userName);
+      const currentIndex = currentTargets.findIndex((p) => p.id === targetId);
+      const nextIndex = currentIndex + 1;
+      if (nextIndex < currentTargets.length) {
+        setCurrentTarget(currentTargets[nextIndex]);
+        setIsExpanded(false);
+      } else {
+        setCurrentTarget(null);
       }
+    } catch (err) {
+      setError("Помилка відправки відповідей: " + err.message);
+      console.error("Ошибка отправки ответов:", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    const { error: insertError } = await supabase
-      .from("answers")
-      .insert(payload);
-
-    if (insertError) {
-      setErrors({
-        global: "Помилка при збереженні відповідей: " + insertError.message,
-      });
-      setSubmitting(false);
-      return;
-    }
-
-    const { error: updateError } = await supabase
-      .from("users")
-      .update({ submitted: true })
-      .eq("name", userName);
-
-    if (updateError) {
-      setErrors({
-        global: "Помилка оновлення статусу: " + updateError.message,
-      });
-      setSubmitting(false);
-      return;
-    }
-
-    navigate("/graph");
   };
 
-  return (
-    <div className="lobby-page">
-      <div className="bubbles" id="bubbles"></div>
-      <div className="lobby-container">
-        <h2 className="lobby-heading">Вітаю {userName}, оцініть учасників</h2>
-        {errors.global && <p className="error-message">{errors.global}</p>}
-        {players.map((player) => (
-          <div key={player.id} className="question-section">
-            <h3 className="lobby-subheading">{player.name}</h3>
-            {QUESTIONS.map((q, index) => {
-              const value = answers[player.id]?.[index] || "";
-              const isError = errors[player.id]?.[index];
+  const targetPlayer = currentTarget;
+  const questions = targetPlayer
+    ? [
+        {
+          text: `Чи бажаєте ви комунікувати з ${targetPlayer.name}?`,
+          type: "boolean",
+          options: ["Так", "Ні"],
+        },
+      ]
+    : [];
+  const additionalQuestions =
+    targetPlayer && answers[targetPlayer.id]?.["0"]?.willingToCommunicate
+      ? [
+          {
+            text: `Як часто ви комунікуєте з ${targetPlayer.name}?`,
+            type: "int",
+            options: [1, 2, 3, 4, 5],
+          },
+          {
+            text: `Наскільки ефективна для вас комунікація з ${targetPlayer.name}?`,
+            type: "int",
+            options: [1, 2, 3, 4, 5],
+          },
+          {
+            text: `Залишити коментар`,
+            type: "str",
+          },
+        ]
+      : [];
 
-              return (
-                <div key={index} className="question-item">
-                  <label>{q.replace("користувачем", player.name)}</label>
-                  {index < 4 ? (
-                    <RatingButtons
-                      value={value}
-                      onChange={(value) =>
-                        handleChange(player.id, index, value)
-                      }
-                      isError={isError}
-                    />
-                  ) : (
-                    <input
-                      type="text"
-                      placeholder="Ваш коментар"
-                      value={value}
-                      onChange={(e) =>
-                        handleChange(player.id, index, e.target.value)
-                      }
-                      className={isError ? "error" : ""}
-                    />
-                  )}
-                </div>
-              );
-            })}
+  return (
+    <div className="questions-page">
+      <div className="bubbles" id="bubbles"></div>
+      <div className={`form-container ${isExpanded ? "expanded" : ""}`}>
+        <h1 className="form-heading">
+          Оцінка гравців, <span className="username">{userName}</span>
+        </h1>
+        {isLoading ? (
+          <p>Завантаження...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : !targetPlayer ? (
+          <p>Всі ваші відповіді відправлено. Очікування завершення іншими...</p>
+        ) : (
+          <div className="players-list">
+            {[...questions, ...additionalQuestions].map((question, index) => (
+              <div key={index} className="list-item">
+                <label>{question.text}</label>
+                {question.type === "boolean" ? (
+                  <div className="button-group">
+                    {question.options.map((option, optIndex) => (
+                      <button
+                        key={optIndex}
+                        onClick={() =>
+                          handleAnswerChange(
+                            targetPlayer.id,
+                            index,
+                            0,
+                            "",
+                            option === "Так"
+                          )
+                        }
+                        className={`option-btn boolean ${
+                          answers[targetPlayer.id]?.["0"]
+                            ?.willingToCommunicate ===
+                          (option === "Так")
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    ))}
+                  </div>
+                ) : question.type === "int" ? (
+                  <div className="button-group">
+                    {question.options.map((value) => (
+                      <button
+                        key={value}
+                        onClick={() =>
+                          handleAnswerChange(
+                            targetPlayer.id,
+                            index,
+                            value,
+                            answers[targetPlayer.id]?.[`${index}`]?.comment ||
+                              ""
+                          )
+                        }
+                        className={`option-btn ${
+                          answers[targetPlayer.id]?.[`${index}`]?.value ===
+                          value
+                            ? "selected"
+                            : ""
+                        }`}
+                      >
+                        {value}
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <input
+                    type="text"
+                    value={
+                      answers[targetPlayer.id]?.[`${index}`]?.comment || ""
+                    }
+                    onChange={(e) =>
+                      handleAnswerChange(
+                        targetPlayer.id,
+                        index,
+                        answers[targetPlayer.id]?.[`${index}`]?.value || 0,
+                        e.target.value
+                      )
+                    }
+                    className="input-item"
+                    placeholder="Коментар"
+                  />
+                )}
+              </div>
+            ))}
+            <button
+              onClick={() => handleSubmit(targetPlayer.id)}
+              disabled={
+                isLoading ||
+                answers[targetPlayer.id]?.["0"]?.willingToCommunicate ===
+                  undefined
+              }
+            >
+              {isLoading ? "Відправка..." : "Відправити"}
+            </button>
           </div>
-        ))}
-        <button onClick={handleSubmit} disabled={submitting}>
-          {submitting ? "Надсилання..." : "Надіслати відповіді"}
-        </button>
+        )}
       </div>
     </div>
   );

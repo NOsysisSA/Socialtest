@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { db } from "../../firebase";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  getDoc,
+  doc,
+  setDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import "./stylesJoinPage.css";
 
 export default function JoinPage() {
@@ -36,33 +46,40 @@ export default function JoinPage() {
     if (!name.trim()) return alert("Введіть ім'я");
 
     setLoading(true);
+    try {
+      const statusDoc = doc(db, "test_status", "status");
+      const statusSnap = await getDoc(statusDoc);
+      if (!statusSnap.exists()) {
+        await setDoc(statusDoc, { started: false, reset_needed: false });
+      }
+      const statusData = statusSnap.data();
+      if (statusData?.started) {
+        alert("Гра вже почалася. Приєднання заборонене.");
+        return;
+      }
 
-    const { data: status, error: statusError } = await supabase
-      .from("test_status")
-      .select("started")
-      .eq("id", 1)
-      .single();
+      const usersQuery = query(collection(db, "users"));
+      const usersSnapshot = await getDocs(usersQuery);
+      const userCount = usersSnapshot.size;
+      const newNumber = userCount + 1;
 
-    if (status?.started) {
-      alert("Гра вже почалася. Приєднання заборонене.");
+      const usersRef = collection(db, "users");
+      const userDocRef = doc(usersRef);
+      await setDoc(userDocRef, {
+        name,
+        submitted: false,
+        created_at: serverTimestamp(),
+        role: userCount === 0 ? "admin" : "user",
+        number: newNumber,
+      });
+
+      localStorage.setItem("userName", name);
+      navigate(`/lobby/${name}`);
+    } catch (error) {
+      alert("Ошибка: " + error.message);
+      console.error("Ошибка при присоединении:", error);
+    } finally {
       setLoading(false);
-      console.log(statusError);
-      return;
-    }
-
-    const { data, error } = await supabase
-      .from("users")
-      .upsert([{ name }])
-      .select()
-      .single();
-
-    setLoading(false);
-
-    if (error) {
-      alert("Помилка при підключенні: " + error.message);
-    } else {
-      localStorage.setItem("userName", data.name);
-      navigate(`/lobby/${data.name}`);
     }
   }
 

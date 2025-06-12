@@ -4,7 +4,7 @@ body {
     overflow: hidden;
 }
 
-.join-page, .lobby-page {
+.lobby-page {
     height: 100vh;
     display: flex;
     justify-content: center;
@@ -45,7 +45,7 @@ body {
     100% { transform: scale(1); }
 }
 
-.form-container, .lobby-container {
+.form-container {
     background: rgba(255, 255, 255, 0.1);
     backdrop-filter: blur(10px);
     border-radius: 15px;
@@ -59,7 +59,7 @@ body {
     z-index: 1;
 }
 
-.form-heading, .lobby-heading {
+.form-heading {
     color: #ffffff;
     font-size: 2rem;
     margin-bottom: 1.5rem;
@@ -69,34 +69,22 @@ body {
     animation: fadeIn 1s ease-in;
 }
 
-.lobby-subheading {
-    color: #ffffff;
-    font-size: 1.2rem;
-    margin: 1rem 0;
-    font-weight: 400;
-    animation: fadeIn 1.2s ease-in;
-}
-
-.input-item {
+.players-list {
     width: 100%;
-    padding: 0.8rem;
+    max-height: 300px;
+    overflow-y: auto;
     margin-bottom: 1.5rem;
-    border: none;
-    border-radius: 8px;
-    background: rgba(255, 255, 255, 0.15);
+}
+
+.list-item {
+    padding: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    font-size: 1.1rem;
     color: #ffffff;
-    font-size: 1rem;
-    outline: none;
-    transition: background 0.3s, box-shadow 0.3s;
 }
 
-.input-item::placeholder {
-    color: rgba(255, 255, 255, 0.6);
-}
-
-.input-item:focus {
-    background: rgba(255, 255, 255, 0.2);
-    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+.list-item:last-child {
+    border-bottom: none;
 }
 
 button {
@@ -110,7 +98,6 @@ button {
     font-weight: 600;
     cursor: pointer;
     transition: transform 0.3s, box-shadow 0.3s;
-    margin: 0.5rem 0;
 }
 
 button:hover:not(:disabled) {
@@ -124,36 +111,8 @@ button:disabled {
 }
 
 .error-message {
-    color: #ff4d4d;
-    font-size: 1rem;
-    margin: 1rem 0;
-    animation: fadeIn 1s ease-in;
-}
-
-.player-list {
-    list-style: none;
-    padding: 0;
-    margin: 1rem 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.player-list li {
-    color: #ffffff;
-    font-size: 1rem;
-    padding: 0.5rem;
-    border-radius: 5px;
-    margin: 0.3rem 0;
-    background: rgba(255, 255, 255, 0.05);
-    transition: background 0.3s;
-}
-
-.player-list li strong {
-    color: #00ddeb;
-}
-
-.player-list li:hover {
-    background: rgba(255, 255, 255, 0.1);
+    color: red;
+    margin-top: 1rem;
 }
 
 @keyframes fadeIn {
@@ -162,20 +121,16 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-    .form-container, .lobby-container {
+    .form-container {
         padding: 1.5rem;
         max-width: 90%;
     }
 
-    .form-heading, .lobby-heading {
+    .form-heading {
         font-size: 1.5rem;
     }
 
-    .lobby-subheading {
-        font-size: 1rem;
-    }
-
-    .input-item, button, .player-list li {
+    .list-item, button {
         font-size: 0.9rem;
     }
 }

@@ -1,6 +1,16 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { supabase } from "../supabaseClient";
+import { db } from "../../firebase";
+import {
+  collection,
+  query,
+  onSnapshot,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  serverTimestamp,
+} from "firebase/firestore";
 import "./stylesLobbyPage.css";
 
 export default function LobbyPage() {
@@ -8,116 +18,102 @@ export default function LobbyPage() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [error, setError] = useState(null);
-  const [currentUser, setCurrentUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchPlayers() {
-      const { data, error } = await supabase.from("users").select("*");
-      if (error) {
-        setError("Помилка завантаження учасників: " + error.message);
-      } else {
-        setPlayers(data);
-        const user = data.find((player) => player.name === userName);
-        setCurrentUser(user);
+    async function fetchInitialData() {
+      setIsLoading(true);
+      try {
+        const statusDoc = doc(db, "test_status", "status");
+        const statusSnap = await getDoc(statusDoc);
+        if (!statusSnap.exists()) {
+          await setDoc(statusDoc, { started: false, reset_needed: false });
+        }
+
+        const q = query(collection(db, "users"));
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const playersData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            playersData.sort((a, b) => a.number - b.number);
+            setPlayers(playersData);
+          },
+          (err) => {
+            setError("Помилка завантаження гравців: " + err.message);
+            console.error("Ошибка загрузки игроков:", err);
+          }
+        );
+      } catch (err) {
+        setError("Помилка завантаження: " + err.message);
+        console.error("Ошибка при загрузке данных:", err);
+      } finally {
+        setIsLoading(false);
       }
     }
 
-    fetchPlayers();
+    fetchInitialData();
 
-    const userSubscription = supabase
-      .channel("public:users")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "users" },
-        (payload) => {
-          fetchPlayers();
+    const statusDoc = doc(db, "test_status", "status");
+    const unsubscribe = onSnapshot(
+      statusDoc,
+      (snapshot) => {
+        if (snapshot.data()?.started) {
+          navigate(`/questions/${userName}`);
         }
-      )
-      .subscribe();
+      },
+      (err) => {
+        console.error("Ошибка отслеживания статуса теста:", err);
+      }
+    );
 
-    const statusSubscription = supabase
-      .channel("public:test_status")
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "test_status",
-          filter: "id=eq.1",
-        },
-        (payload) => {
-          if (payload.new.started) {
-            navigate(`/questions/${userName}`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(userSubscription);
-      supabase.removeChannel(statusSubscription);
-    };
+    return () => unsubscribe();
   }, [userName, navigate]);
 
-  useEffect(() => {
-    const bubblesContainer = document.getElementById("bubbles");
-    if (!bubblesContainer) return;
-
-    bubblesContainer.innerHTML = "";
-
-    for (let i = 0; i < 30; i++) {
-      const bubble = document.createElement("div");
-      bubble.classList.add("bubble");
-      const size = Math.random() * 40 + 20;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.left = `${Math.random() * 100}vw`;
-      bubble.style.top = `${Math.random() * 100}vh`;
-      bubble.style.animationDelay = `${Math.random() * 5}s`;
-      bubble.style.animationDuration = `${Math.random() * 4 + 4}s`;
-      bubblesContainer.appendChild(bubble);
+  const handleStartTest = async () => {
+    setIsLoading(true);
+    try {
+      const statusDoc = doc(db, "test_status", "status");
+      await updateDoc(statusDoc, { started: true });
+      console.log("Тест запущен");
+    } catch (err) {
+      setError("Помилка запуску тесту: " + err.message);
+      console.error("Ошибка запуска теста:", err);
+    } finally {
+      setIsLoading(false);
     }
-
-    return () => {
-      bubblesContainer.innerHTML = "";
-    };
-  }, []);
-
-  async function handleStartTest() {
-    const { error } = await supabase
-      .from("test_status")
-      .update({ started: true })
-      .eq("id", 1);
-    if (error) {
-      setError("Помилка запуску тесту: " + error.message);
-    } else {
-      navigate(`/questions/${userName}`);
-    }
-  }
+  };
 
   return (
     <div className="lobby-page">
       <div className="bubbles" id="bubbles"></div>
-      <div className="lobby-container">
-        <h2 className="lobby-heading">Привіт, {userName}</h2>
-        {currentUser?.id === 1 && (
-          <button onClick={handleStartTest}>🚀 Запустити тест</button>
+      <div className="form-container">
+        <h1 className="form-heading">Лобі, {userName}</h1>
+        {isLoading ? (
+          <p>Завантаження...</p>
+        ) : error ? (
+          <p className="error-message">{error}</p>
+        ) : (
+          <>
+            <div className="players-list">
+              {players.map((player) => (
+                <div key={player.id} className="list-item">
+                  {player.number}. {player.name}
+                </div>
+              ))}
+            </div>
+            {players.find((p) => p.name === userName && p.role === "admin") && (
+              <button
+                onClick={handleStartTest}
+                disabled={isLoading || players.length < 2}
+              >
+                {isLoading ? "Запуск..." : "Запустити тест"}
+              </button>
+            )}
+          </>
         )}
-        <h4 className="lobby-subheading">Список учасників:</h4>
-        {error && <p className="error-message">{error}</p>}
-        <ul className="player-list">
-          {players.map((player) => (
-            <li key={player.id}>
-              {player.name === userName ? (
-                <strong>
-                  {player.id}. {player.name} (ви)
-                </strong>
-              ) : (
-                `${player.id}. ${player.name}`
-              )}
-            </li>
-          ))}
-        </ul>
       </div>
     </div>
   );

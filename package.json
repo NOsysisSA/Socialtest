@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
     "chroma-js": "^3.1.2",
     "d3": "^7.9.0",
+    "firebase": "^11.9.1",
+    "framer-motion": "^12.17.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-force-graph": "^1.47.6",
@@ -17,6 +18,7 @@
     "react-force-graph-3d": "^1.26.1",
     "react-router-dom": "^7.6.2",
     "react-scripts": "5.0.1",
+    "vis-network": "^9.1.11",
     "web-vitals": "^2.1.4"
   },
   "scripts": {
