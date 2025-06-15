@@ -12,10 +12,11 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
+import { useBubbles } from "../Bubbles/useBubbles";
 import styles from "./QuestionsPage.module.css";
 
 export default function QuestionsPage() {
-  const { userName } = useParams();
+  const { testId, userName } = useParams();
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
@@ -24,12 +25,13 @@ export default function QuestionsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentTarget, setCurrentTarget] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  useBubbles();
 
   useEffect(() => {
     async function fetchInitialData() {
       setIsLoading(true);
       try {
-        const statusDoc = doc(db, "test_status", "status");
+        const statusDoc = doc(db, "tests", testId, "status", "status");
         const statusSnap = await getDoc(statusDoc);
         if (!statusSnap.exists()) {
           await setDoc(statusDoc, {
@@ -41,11 +43,11 @@ export default function QuestionsPage() {
         }
         const statusData = statusSnap.data();
         if (!statusData.started) {
-          navigate(`/lobby/${userName}`);
+          navigate(`/lobby/${testId}/${userName}`);
           return;
         }
 
-        const q = query(collection(db, "users"));
+        const q = query(collection(db, "tests", testId, "users"));
         onSnapshot(
           q,
           (snapshot) => {
@@ -76,7 +78,7 @@ export default function QuestionsPage() {
     fetchInitialData();
 
     const answersQuery = query(
-      collection(db, "answers"),
+      collection(db, "tests", testId, "answers"),
       where("evaluator_name", "==", userName)
     );
     const unsubscribeAnswers = onSnapshot(
@@ -95,15 +97,12 @@ export default function QuestionsPage() {
       }
     );
 
-    const statusDoc = doc(db, "test_status", "status");
+    const statusDoc = doc(db, "tests", testId, "status", "status");
     const unsubscribeStatus = onSnapshot(
       statusDoc,
       (snapshot) => {
         const statusData = snapshot.data();
-        if (!statusData) {
-          console.warn("test_status/status document is missing");
-          return;
-        }
+        if (!statusData) return;
         const totalParticipants = statusData.totalParticipants || 0;
         const submittedCount = statusData.participantsSubmitted || 0;
 
@@ -111,12 +110,12 @@ export default function QuestionsPage() {
           totalParticipants > 0 &&
           submittedCount >= totalParticipants * (totalParticipants - 1)
         ) {
-          navigate("/graph");
+          navigate(`/graph/${testId}`);
         }
       },
       (err) => {
-        console.error("Ошибка отслеживания статуса теста:", err);
         setError("Помилка статусу тесту: " + err.message);
+        console.error("Ошибка отслеживания статуса теста:", err);
       }
     );
 
@@ -124,7 +123,7 @@ export default function QuestionsPage() {
       unsubscribeAnswers();
       unsubscribeStatus();
     };
-  }, [userName, navigate]);
+  }, [testId, userName, navigate]);
 
   const handleAnswerChange = (
     targetId,
@@ -157,11 +156,11 @@ export default function QuestionsPage() {
         return;
       }
 
-      const statusDoc = doc(db, "test_status", "status");
+      const statusDoc = doc(db, "tests", testId, "status", "status");
       const statusSnap = await getDoc(statusDoc);
       const statusData = statusSnap.data() || { participantsSubmitted: 0 };
 
-      const answerDocRef = doc(collection(db, "answers"));
+      const answerDocRef = doc(collection(db, "tests", testId, "answers"));
       const responses = {};
       for (let i = 0; i < 4; i++) {
         const answer = answers[targetId]?.[`${i}`] || {
@@ -193,7 +192,7 @@ export default function QuestionsPage() {
         created_at: serverTimestamp(),
       });
 
-      const userDoc = doc(db, "users", currentUser.id);
+      const userDoc = doc(db, "tests", testId, "users", currentUser.id);
       await updateDoc(userDoc, { submitted: true });
       const submittedCount = statusData.participantsSubmitted + 1;
       await updateDoc(statusDoc, { participantsSubmitted: submittedCount });

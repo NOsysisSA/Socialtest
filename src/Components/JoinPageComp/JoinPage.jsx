@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import { db } from "../../firebase";
 import {
   collection,
@@ -10,43 +10,22 @@ import {
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { useBubbles } from "../Bubbles/useBubbles";
 import styles from "./JoinPage.module.css";
 
 export default function JoinPage() {
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const bubblesContainer = document.getElementById("bubbles");
-    if (!bubblesContainer) return;
-
-    bubblesContainer.innerHTML = "";
-
-    for (let i = 0; i < 30; i++) {
-      const bubble = document.createElement("div");
-      bubble.classList.add(styles.bubble);
-      const size = Math.random() * 40 + 20;
-      bubble.style.width = `${size}px`;
-      bubble.style.height = `${size}px`;
-      bubble.style.left = `${Math.random() * 100}vw`;
-      bubble.style.top = `${Math.random() * 100}vh`;
-      bubble.style.animationDelay = `${Math.random() * 5}s`;
-      bubble.style.animationDuration = `${Math.random() * 4 + 4}s`;
-      bubblesContainer.appendChild(bubble);
-    }
-
-    return () => {
-      bubblesContainer.innerHTML = "";
-    };
-  }, []);
+  const { testId } = useParams();
+  useBubbles();
 
   async function handleJoin() {
     if (!name.trim()) return alert("Введіть ім'я");
 
     setLoading(true);
     try {
-      const statusDoc = doc(db, "test_status", "status");
+      const statusDoc = doc(db, "tests", testId, "status", "status");
       const statusSnap = await getDoc(statusDoc);
       if (!statusSnap.exists()) {
         await setDoc(statusDoc, { started: false, reset_needed: false });
@@ -57,12 +36,12 @@ export default function JoinPage() {
         return;
       }
 
-      const usersQuery = query(collection(db, "users"));
+      const usersQuery = query(collection(db, "tests", testId, "users"));
       const usersSnapshot = await getDocs(usersQuery);
       const userCount = usersSnapshot.size;
       const newNumber = userCount + 1;
 
-      const usersRef = collection(db, "users");
+      const usersRef = collection(db, "tests", testId, "users");
       const userDocRef = doc(usersRef);
       await setDoc(userDocRef, {
         name,
@@ -73,9 +52,15 @@ export default function JoinPage() {
       });
 
       localStorage.setItem("userName", name);
-      navigate(`/lobby/${name}`);
+      navigate(`/lobby/${testId}/${name}`);
     } catch (error) {
-      alert("Ошибка: " + error.message);
+      let message = "Помилка приєднання";
+      if (error.code === "permission-denied") {
+        message = "Недостатньо прав для приєднання";
+      } else {
+        message += ": " + error.message;
+      }
+      alert(message);
       console.error("Ошибка при присоединении:", error);
     } finally {
       setLoading(false);
@@ -86,7 +71,7 @@ export default function JoinPage() {
     <div className={styles.joinPage}>
       <div className={styles.bubbles} id="bubbles"></div>
       <div className={styles.formContainer}>
-        <h1 className={styles.formHeading}>Приєднатися до гри</h1>
+        <h1 className={styles.formHeading}>Приєднатися до тесту</h1>
         <input
           className={styles.inputItem}
           type="text"

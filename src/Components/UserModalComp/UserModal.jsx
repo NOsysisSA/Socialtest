@@ -14,9 +14,6 @@ function UserModal({ user, answers, users, onClose }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
-  console.log("UserModal props:", { user, answers, users });
-  console.log("User answers:", answers.filter((a) => a.target_id === user?.id));
-
   if (!user) return null;
 
   const userAnswers = answers.filter((a) => a.target_id === user.id);
@@ -44,7 +41,6 @@ function UserModal({ user, answers, users, onClose }) {
                   const answer = userAnswers.find(
                     (a) => a.evaluator_name.trim().toLowerCase() === evaluator.name.trim().toLowerCase()
                   );
-                  console.log(`Evaluator: ${evaluator.name}, Answer:`, answer);
                   return (
                     <tr key={evaluator.id || index}>
                       <td>{evaluator.name || "Невідомий"}</td>

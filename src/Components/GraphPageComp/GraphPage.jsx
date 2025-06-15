@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import ForceGraph2D from "react-force-graph-2d";
 import { db } from "../../firebase";
 import {
@@ -6,41 +7,44 @@ import {
   query,
   onSnapshot,
   doc,
-  updateDoc,
-  deleteDoc,
   getDocs,
-  runTransaction,
+  deleteDoc,
+  updateDoc,
+  setDoc,
 } from "firebase/firestore";
 import chroma from "chroma-js";
 import UserModal from "../UserModalComp/UserModal";
+import { useBubbles } from "../Bubbles/useBubbles";
 import styles from "./GraphPage.module.css";
 
 function GraphPage() {
+  const { testId } = useParams();
+  const navigate = useNavigate();
   const [graphData, setGraphData] = useState({ nodes: [], links: [] });
   const [userIdToColor, setUserIdToColor] = useState({});
   const [readyToShow, setReadyToShow] = useState(false);
   const [users, setUsers] = useState([]);
   const [answers, setAnswers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [error, setError] = useState(null);
+  useBubbles();
 
   useEffect(() => {
     let unsubscribeUsers, unsubscribeAnswers;
 
     async function checkAndLoad() {
       try {
-        const usersQuery = query(collection(db, "users"));
+        const usersQuery = query(collection(db, "tests", testId, "users"));
         unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
           const usersData = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
-          console.log("Users data:", usersData);
           setUsers(usersData);
 
-          const answersQuery = query(collection(db, "answers"));
+          const answersQuery = query(collection(db, "tests", testId, "answers"));
           unsubscribeAnswers = onSnapshot(answersQuery, (snapshot) => {
             const answersData = snapshot.docs.map((doc) => doc.data());
-            console.log("Answers data:", answersData);
             setAnswers(answersData);
 
             const expectedSubmissionsPerUser = usersData.length - 1;
@@ -49,20 +53,14 @@ function GraphPage() {
               const evaluatorName = a.evaluator_name?.trim().toLowerCase();
               submittedMap[evaluatorName] = (submittedMap[evaluatorName] || 0) + 1;
             });
-            console.log("Submitted map:", submittedMap);
 
-            const allSubmitted = usersData.every(
-              (user) => {
-                const userName = user.name?.trim().toLowerCase();
-                const submissions = submittedMap[userName] || 0;
-                console.log(`User: ${userName}, Submissions: ${submissions}, Expected: ${expectedSubmissionsPerUser}`);
-                return submissions === expectedSubmissionsPerUser;
-              }
-            );
-            console.log("All submitted:", allSubmitted);
+            const allSubmitted = usersData.every((user) => {
+              const userName = user.name?.trim().toLowerCase();
+              const submissions = submittedMap[userName] || 0;
+              return submissions === expectedSubmissionsPerUser;
+            });
 
             const allUsersSubmitted = usersData.every((user) => user.submitted === true);
-            console.log("All users submitted (fallback):", allUsersSubmitted);
 
             if (allSubmitted || (allUsersSubmitted && usersData.length > 0)) {
               setReadyToShow(true);
@@ -151,12 +149,15 @@ function GraphPage() {
               setReadyToShow(false);
             }
           }, (err) => {
+            setError("Помилка завантаження відповідей: " + err.message);
             console.error("Ошибка загрузки ответов:", err);
           });
         }, (err) => {
+          setError("Помилка завантаження користувачів: " + err.message);
           console.error("Ошибка загрузки пользователей:", err);
         });
       } catch (err) {
+        setError("Помилка завантаження даних: " + err.message);
         console.error("Общая ошибка загрузки данных:", err);
       }
     }
@@ -167,73 +168,79 @@ function GraphPage() {
       if (unsubscribeUsers) unsubscribeUsers();
       if (unsubscribeAnswers) unsubscribeAnswers();
     };
-  }, []);
+  }, [testId]);
 
   async function handleFullReset() {
     try {
-      const statusDoc = doc(db, "test_status", "status");
+      if (!testId) {
+        throw new Error("Test ID is undefined");
+      }
 
-      await runTransaction(db, async (transaction) => {
-        // Get and delete all answers
-        const answersQuery = query(collection(db, "answers"));
-        const answersSnapshot = await transaction.get(answersQuery);
-        if (!answersSnapshot.empty) {
-          const deleteAnswersPromises = answersSnapshot.docs.map((doc) => {
-            console.log("Deleting answer doc:", doc.id);
-            return transaction.delete(doc.ref);
-          });
-          await Promise.all(deleteAnswersPromises);
-        } else {
-          console.log("No answers to delete");
+      console.log("Starting reset for testId:", testId);
+
+      const statusDoc = doc(db, "tests", testId, "status", "status");
+      const answersCollection = collection(db, "tests", testId, "answers");
+      const usersCollection = collection(db, "tests", testId, "users");
+
+      console.log("StatusDoc path:", statusDoc.path);
+      console.log("AnswersCollection path:", answersCollection.path);
+      console.log("UsersCollection path:", usersCollection.path);
+
+      // Delete answers
+      const answersQuery = query(answersCollection);
+      const answersSnapshot = await getDocs(answersQuery);
+      console.log("Answers snapshot size:", answersSnapshot.size);
+      for (const docSnap of answersSnapshot.docs) {
+        if (!docSnap.ref) {
+          console.warn("Invalid answer document reference:", docSnap.id);
+          continue;
         }
+        console.log("Deleting answer:", docSnap.ref.path);
+        await deleteDoc(docSnap.ref);
+      }
 
-        // Reset all users
-        const usersQuery = query(collection(db, "users"));
-        const usersSnapshot = await transaction.get(usersQuery);
-        if (!usersSnapshot.empty) {
-          const updateUsersPromises = usersSnapshot.docs.map((doc) => {
-            console.log("Updating user doc:", doc.id);
-            return transaction.update(doc.ref, { submitted: false });
-          });
-          await Promise.all(updateUsersPromises);
-        } else {
-          console.log("No users to update");
+      // Update users
+      const usersQuery = query(usersCollection);
+      const usersSnapshot = await getDocs(usersQuery);
+      console.log("Users snapshot size:", usersSnapshot.size);
+      for (const docSnap of usersSnapshot.docs) {
+        if (!docSnap.ref) {
+          console.warn("Invalid user document reference:", docSnap.id);
+          continue;
         }
+        console.log("Updating user:", docSnap.ref.path);
+        await updateDoc(docSnap.ref, { submitted: false });
+      }
 
-        // Reset status
-        const statusSnapshot = await transaction.get(statusDoc);
-        if (statusSnapshot.exists()) {
-          console.log("Updating status doc");
-          transaction.update(statusDoc, {
-            started: false,
-            participantsSubmitted: 0,
-            totalParticipants: 0,
-            allSubmitted: false,
-            reset_needed: false,
-          });
-        } else {
-          console.log("Status doc does not exist, creating new");
-          transaction.set(statusDoc, {
-            started: false,
-            participantsSubmitted: 0,
-            totalParticipants: 0,
-            allSubmitted: false,
-            reset_needed: false,
-          });
-        }
+      // Reset status
+      console.log("Checking status document:", statusDoc.path);
+      const statusSnapshot = await getDocs(query(collection(db, "tests", testId, "status")));
+      if (statusSnapshot.docs.some((d) => d.id === "status")) {
+        console.log("Updating status document");
+        await updateDoc(statusDoc, {
+          started: false,
+          participantsSubmitted: 0,
+          totalParticipants: 0,
+          allSubmitted: false,
+          reset_needed: false,
+        });
+      } else {
+        console.log("Setting new status document");
+        await setDoc(statusDoc, {
+          started: false,
+          participantsSubmitted: 0,
+          totalParticipants: 0,
+          allSubmitted: false,
+          reset_needed: false,
+        });
+      }
 
-        console.log("Transaction completed successfully");
-      });
-
-      // Clear local storage
+      console.log("Reset completed successfully");
       localStorage.clear();
-      console.log("Local storage cleared");
-
-      console.log("Сброс выполнен");
-      window.location.href = "/";
+      navigate("/create-test");
     } catch (err) {
-      console.error("Общая ошибка сброса:", err);
-      alert("Ошибка при сбросе: " + err.message);
+      console.error("Ошибка при сбросе:", err);
+      setError(`Помилка при сбросі: ${err.message}`);
     }
   }
 
@@ -243,6 +250,7 @@ function GraphPage() {
       {!readyToShow ? (
         <div className={styles.formContainer}>
           <h1 className={styles.formHeading}>Очікуємо відповіді від усіх учасників...</h1>
+          {error && <p className={styles.errorMessage}>{error}</p>}
         </div>
       ) : (
         <>
@@ -288,6 +296,7 @@ function GraphPage() {
               ⬅ Повернутися на головну
             </button>
           </div>
+          {error && <p className={styles.errorMessage}>{error}</p>}
           {selectedUser && (
             <UserModal
               user={selectedUser}
