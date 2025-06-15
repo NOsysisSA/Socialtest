@@ -1,31 +1,30 @@
-.modal-overlay {
+.modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 1000;
 }
 
-.modal-content {
+.modalContent {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 15px;
   padding: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   width: 100%;
   max-width: 600px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
   position: relative;
   color: #ffffff;
-  animation: fadeIn 0.3s ease-in;
 }
 
-.close-button {
+.closeButton {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -37,90 +36,81 @@
   transition: color 0.3s;
 }
 
-.close-button:hover {
+.closeButton:hover {
   color: #00ddeb;
 }
 
-.modal-heading {
+.modalHeading {
   font-size: 1.8rem;
   margin-bottom: 1.5rem;
   font-weight: 600;
+  text-align: center;
   text-transform: uppercase;
   letter-spacing: 1px;
-  text-align: center;
 }
 
-.evaluations-table {
+.evaluationsTable {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1.5rem;
 }
 
-.evaluations-table th,
-.evaluations-table td {
+.evaluationsTable th,
+.evaluationsTable td {
   padding: 0.75rem;
-  text-align: left;
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: left;
 }
 
-.evaluations-table th {
-  background: rgba(255, 255, 255, 0.05);
+.evaluationsTable th {
   font-weight: 600;
   color: #00ddeb;
 }
 
-.evaluations-table td {
-  font-size: 1rem;
+.evaluationsTable td {
+  color: #ffffff;
 }
 
-.comments-section {
-  max-height: 200px;
-  overflow-y: auto;
+.commentsSection {
+  margin-top: 1rem;
 }
 
-.comments-section h3 {
+.commentsSection h3 {
   font-size: 1.2rem;
   margin-bottom: 0.75rem;
   color: #00ddeb;
 }
 
 .comment {
-  margin-bottom: 0.5rem;
-  font-size: 1rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.comment:last-child {
+  border-bottom: none;
 }
 
 .comment strong {
-  color: #00ddeb;
-}
-
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  color: #ffffff;
 }
 
 @media (max-width: 480px) {
-  .modal-content {
+  .modalContent {
     padding: 1.5rem;
     max-width: 90%;
   }
 
-  .modal-heading {
+  .modalHeading {
     font-size: 1.5rem;
   }
 
-  .evaluations-table th,
-  .evaluations-table td {
+  .evaluationsTable th,
+  .evaluationsTable td {
     padding: 0.5rem;
     font-size: 0.9rem;
   }
 
-  .comments-section h3 {
+  .commentsSection h3 {
     font-size: 1rem;
   }
 

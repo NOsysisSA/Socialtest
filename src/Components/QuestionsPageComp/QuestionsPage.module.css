@@ -1,10 +1,5 @@
-body {
+.questionsPage {
   margin: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.questions-page {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -39,11 +34,7 @@ body {
 
 .bubble {
   position: absolute;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.1)
-  );
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border-radius: 50%;
   animation: pulse 6s infinite ease-in-out;
   opacity: 0.4;
@@ -61,7 +52,7 @@ body {
   }
 }
 
-.form-container {
+.formContainer {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 15px;
@@ -79,12 +70,12 @@ body {
   overflow: hidden;
 }
 
-.form-container.expanded {
+.formContainer.expanded {
   min-height: 700px;
   height: 700px;
 }
 
-.form-heading {
+.formHeading {
   color: #ffffff;
   font-size: 2.2rem;
   margin-bottom: 1.5rem;
@@ -94,11 +85,11 @@ body {
   animation: fadeIn 1s ease-in;
 }
 
-.form-heading .username {
+.formHeading .username {
   color: #00ddeb;
 }
 
-.players-list {
+.playersList {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -106,7 +97,7 @@ body {
   margin-bottom: 1rem;
 }
 
-.list-item {
+.listItem {
   padding: 0.5rem;
   font-size: 1.2rem;
   color: #ffffff;
@@ -119,7 +110,7 @@ body {
   animation-delay: 0.2s;
 }
 
-.list-item:first-child {
+.listItem:first-child {
   animation-delay: 0s;
 }
 
@@ -134,14 +125,14 @@ body {
   }
 }
 
-.list-item label {
+.listItem label {
   font-size: 1.2rem;
   font-weight: 500;
   word-wrap: break-word;
   max-width: 100%;
 }
 
-.button-group {
+.buttonGroup {
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
@@ -149,7 +140,7 @@ body {
   max-width: 100%;
 }
 
-.input-item {
+.inputItem {
   width: 100%;
   padding: 0.8rem;
   margin-bottom: 0.5rem;
@@ -163,11 +154,11 @@ body {
   box-sizing: border-box;
 }
 
-.input-item::placeholder {
+.inputItem::placeholder {
   color: rgba(255, 255, 255, 0.6);
 }
 
-.input-item:focus {
+.inputItem:focus {
   background: rgba(255, 255, 255, 0.2);
   box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
@@ -195,7 +186,7 @@ button:disabled {
   cursor: not-allowed;
 }
 
-.option-btn {
+.optionBtn {
   padding: 0.5rem;
   border: 2px solid #6b48ff;
   border-radius: 50%;
@@ -212,25 +203,25 @@ button:disabled {
   justify-content: center;
 }
 
-.option-btn:hover:not(.selected) {
+.optionBtn:hover:not(.selected) {
   border-color: #a68bff;
   box-shadow: 0 0 10px #a68bff;
 }
 
-.option-btn.selected {
+.optionBtn.selected {
   background: #00ddeb;
   border-color: #00ddeb;
   box-shadow: 0 0 10px rgba(0, 221, 235, 0.4);
 }
 
-.option-btn.boolean {
+.optionBtn.boolean {
   border-radius: 8px;
   width: auto;
   padding: 0.5rem 1rem;
   height: auto;
 }
 
-.error-message {
+.errorMessage {
   color: #ff5555;
   margin-top: 1rem;
   font-size: 1rem;
@@ -248,30 +239,30 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-  .form-container {
+  .formContainer {
     padding: 1.5rem;
     max-width: 90%;
     min-height: 260px;
     height: 260px;
   }
 
-  .form-container.expanded {
+  .formContainer.expanded {
     min-height: 650px;
     height: 650px;
   }
 
-  .form-heading {
+  .formHeading {
     font-size: 1.8rem;
   }
 
-  .list-item,
-  .input-item,
+  .listItem,
+  .inputItem,
   button,
-  .option-btn {
+  .optionBtn {
     font-size: 0.9rem;
   }
 
-  .option-btn {
+  .optionBtn {
     width: 35px;
     height: 35px;
   }

@@ -4,14 +4,13 @@ import { db } from "../../firebase";
 import {
   collection,
   query,
-  where,
   getDocs,
   getDoc,
   doc,
   setDoc,
   serverTimestamp,
 } from "firebase/firestore";
-import "./stylesJoinPage.css";
+import styles from "./JoinPage.module.css";
 
 export default function JoinPage() {
   const [name, setName] = useState("");
@@ -26,7 +25,7 @@ export default function JoinPage() {
 
     for (let i = 0; i < 30; i++) {
       const bubble = document.createElement("div");
-      bubble.classList.add("bubble");
+      bubble.classList.add(styles.bubble);
       const size = Math.random() * 40 + 20;
       bubble.style.width = `${size}px`;
       bubble.style.height = `${size}px`;
@@ -84,12 +83,12 @@ export default function JoinPage() {
   }
 
   return (
-    <div className="join-page">
-      <div className="bubbles" id="bubbles"></div>
-      <div className="form-container">
-        <h1 className="form-heading">Приєднатися до гри</h1>
+    <div className={styles.joinPage}>
+      <div className={styles.bubbles} id="bubbles"></div>
+      <div className={styles.formContainer}>
+        <h1 className={styles.formHeading}>Приєднатися до гри</h1>
         <input
-          className="input-item"
+          className={styles.inputItem}
           type="text"
           placeholder="Ваше ім'я"
           value={name}

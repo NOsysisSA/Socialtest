@@ -1,31 +1,12 @@
-body {
+.graphPage {
   margin: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.graph-page {
   height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
-  background: linear-gradient(45deg, #0a0a23, #1b1b32, #2a2a4b, #3a3a63);
-  background-size: 400%;
-  animation: gradient 15s ease infinite;
+  background: #1A2333; /* Dark blue background similar to the image */
   position: relative;
   overflow: hidden;
-}
-
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
 }
 
 .bubbles {
@@ -39,45 +20,44 @@ body {
 
 .bubble {
   position: absolute;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.1)
-  );
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border-radius: 50%;
   animation: pulse 6s infinite ease-in-out;
   opacity: 0.4;
 }
 
 @keyframes pulse {
-  0% {
-    transform: scale(1);
-  }
-  50% {
-    transform: scale(1.5);
-  }
-  100% {
-    transform: scale(1);
-  }
+  0% { transform: scale(1); }
+  50% { transform: scale(1.5); }
+  100% { transform: scale(1); }
 }
 
-.form-container {
-  position: absolute;
-  bottom: 20px;
-  right: 20px;
+.formContainer {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 15px;
-  padding: 1rem;
+  padding: 2rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   border: 1px solid rgba(255, 255, 255, 0.2);
   z-index: 1;
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  max-width: 700px;
+  text-align: center;
 }
 
-.form-heading {
+.formContainer.reset {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  padding: 1rem;
+  max-width: none;
+  width: auto;
+}
+
+.formHeading {
   color: #ffffff;
   font-size: 2.2rem;
   margin-bottom: 1.5rem;
@@ -88,7 +68,7 @@ body {
   text-align: center;
 }
 
-.reset-button {
+.resetButton {
   padding: 0.8rem 1.5rem;
   border: none;
   border-radius: 8px;
@@ -100,34 +80,33 @@ body {
   transition: transform 0.3s, box-shadow 0.3s;
 }
 
-.reset-button:hover {
+.resetButton:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 15px rgba(0, 221, 235, 0.4);
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 @media (max-width: 480px) {
-  .form-container {
+  .formContainer {
+    padding: 1.5rem;
+    max-width: 90%;
+  }
+
+  .formContainer.reset {
     padding: 0.75rem;
     bottom: 10px;
     right: 10px;
   }
 
-  .form-heading {
+  .formHeading {
     font-size: 1.8rem;
   }
 
-  .reset-button {
+  .resetButton {
     padding: 0.6rem 1rem;
     font-size: 0.9rem;
   }

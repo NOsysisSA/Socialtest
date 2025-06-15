@@ -9,9 +9,9 @@ import {
   getDoc,
   setDoc,
   updateDoc,
-  serverTimestamp,
+  getDocs,
 } from "firebase/firestore";
-import "./stylesLobbyPage.css";
+import styles from "./LobbyPage.module.css";
 
 export default function LobbyPage() {
   const { userName } = useParams();
@@ -27,7 +27,7 @@ export default function LobbyPage() {
         const statusDoc = doc(db, "test_status", "status");
         const statusSnap = await getDoc(statusDoc);
         if (!statusSnap.exists()) {
-          await setDoc(statusDoc, { started: false, reset_needed: false });
+          await setDoc(statusDoc, { started: false, reset_needed: false, participantsSubmitted: 0, totalParticipants: 0 });
         }
 
         const q = query(collection(db, "users"));
@@ -75,9 +75,18 @@ export default function LobbyPage() {
   const handleStartTest = async () => {
     setIsLoading(true);
     try {
+      // Get the current number of players
+      const usersQuery = query(collection(db, "users"));
+      const usersSnapshot = await getDocs(usersQuery);
+      const totalPlayers = usersSnapshot.size;
+
       const statusDoc = doc(db, "test_status", "status");
-      await updateDoc(statusDoc, { started: true });
-      console.log("Тест запущен");
+      await updateDoc(statusDoc, {
+        started: true,
+        totalParticipants: totalPlayers,
+        participantsSubmitted: 0,
+      });
+      console.log("Тест запущен, totalParticipants:", totalPlayers);
     } catch (err) {
       setError("Помилка запуску тесту: " + err.message);
       console.error("Ошибка запуска теста:", err);
@@ -87,19 +96,19 @@ export default function LobbyPage() {
   };
 
   return (
-    <div className="lobby-page">
-      <div className="bubbles" id="bubbles"></div>
-      <div className="form-container">
-        <h1 className="form-heading">Лобі, {userName}</h1>
+    <div className={styles.lobbyPage}>
+      <div className={styles.bubbles} id="bubbles"></div>
+      <div className={styles.formContainer}>
+        <h1 className={styles.formHeading}>Лобі, {userName}</h1>
         {isLoading ? (
           <p>Завантаження...</p>
         ) : error ? (
-          <p className="error-message">{error}</p>
+          <p className={styles.errorMessage}>{error}</p>
         ) : (
           <>
-            <div className="players-list">
+            <div className={styles.playersList}>
               {players.map((player) => (
-                <div key={player.id} className="list-item">
+                <div key={player.id} className={styles.listItem}>
                   {player.number}. {player.name}
                 </div>
               ))}

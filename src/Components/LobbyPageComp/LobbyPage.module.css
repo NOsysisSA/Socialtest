@@ -1,10 +1,5 @@
-body {
+.lobbyPage {
   margin: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.join-page {
   height: 100vh;
   display: flex;
   justify-content: center;
@@ -39,11 +34,7 @@ body {
 
 .bubble {
   position: absolute;
-  background: radial-gradient(
-    circle,
-    rgba(255, 255, 255, 0.3),
-    rgba(255, 255, 255, 0.1)
-  );
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1));
   border-radius: 50%;
   animation: pulse 6s infinite ease-in-out;
   opacity: 0.4;
@@ -61,7 +52,7 @@ body {
   }
 }
 
-.form-container {
+.formContainer {
   background: rgba(255, 255, 255, 0.1);
   backdrop-filter: blur(10px);
   border-radius: 15px;
@@ -75,7 +66,7 @@ body {
   z-index: 1;
 }
 
-.form-heading {
+.formHeading {
   color: #ffffff;
   font-size: 2rem;
   margin-bottom: 1.5rem;
@@ -85,26 +76,26 @@ body {
   animation: fadeIn 1s ease-in;
 }
 
-.input-item {
+.playersList {
   width: 100%;
-  padding: 0.8rem;
+  max-height: 300px;
+  overflow-y: auto;
   margin-bottom: 1.5rem;
-  border: none;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
+  min-height: 300px;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.listItem {
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 1.1rem;
   color: #ffffff;
-  font-size: 1rem;
-  outline: none;
-  transition: background 0.3s, box-shadow 0.3s;
 }
 
-.input-item::placeholder {
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.input-item:focus {
-  background: rgba(255, 255, 255, 0.2);
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+.listItem:last-child {
+  border-bottom: none;
 }
 
 button {
@@ -130,6 +121,11 @@ button:disabled {
   cursor: not-allowed;
 }
 
+.errorMessage {
+  color: red;
+  margin-top: 1rem;
+}
+
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -142,16 +138,16 @@ button:disabled {
 }
 
 @media (max-width: 480px) {
-  .form-container {
+  .formContainer {
     padding: 1.5rem;
     max-width: 90%;
   }
 
-  .form-heading {
+  .formHeading {
     font-size: 1.5rem;
   }
 
-  .input-item,
+  .listItem,
   button {
     font-size: 0.9rem;
   }

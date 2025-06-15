@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import "./stylesUserModal.css";
+import styles from "./UserModal.module.css";
 
 function UserModal({ user, answers, users, onClose }) {
   const modalRef = useRef(null);
@@ -14,18 +14,21 @@ function UserModal({ user, answers, users, onClose }) {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [onClose]);
 
+  console.log("UserModal props:", { user, answers, users });
+  console.log("User answers:", answers.filter((a) => a.target_id === user?.id));
+
   if (!user) return null;
 
   const userAnswers = answers.filter((a) => a.target_id === user.id);
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content" ref={modalRef}>
-        <button className="close-button" onClick={onClose}>
+    <div className={styles.modalOverlay}>
+      <div className={styles.modalContent} ref={modalRef}>
+        <button className={styles.closeButton} onClick={onClose}>
           ×
         </button>
-        <h2 className="modal-heading">Оцінки для {user.name}</h2>
-        <table className="evaluations-table">
+        <h2 className={styles.modalHeading}>Оцінки для {user.name}</h2>
+        <table className={styles.evaluationsTable}>
           <thead>
             <tr>
               <th>Оцінювач</th>
@@ -34,19 +37,22 @@ function UserModal({ user, answers, users, onClose }) {
             </tr>
           </thead>
           <tbody>
-            {userAnswers.length > 0 ? (
-              userAnswers.map((answer, index) => {
-                const evaluator = users.find(
-                  (u) => u.name === answer.evaluator_name
-                );
-                return (
-                  <tr key={index}>
-                    <td>{evaluator?.name || "Невідомий"}</td>
-                    <td>{answer.responses["1"]?.value || "–"}</td>
-                    <td>{answer.responses["2"]?.value || "–"}</td>
-                  </tr>
-                );
-              })
+            {users.length > 0 ? (
+              users
+                .filter((u) => u.id !== user.id)
+                .map((evaluator, index) => {
+                  const answer = userAnswers.find(
+                    (a) => a.evaluator_name.trim().toLowerCase() === evaluator.name.trim().toLowerCase()
+                  );
+                  console.log(`Evaluator: ${evaluator.name}, Answer:`, answer);
+                  return (
+                    <tr key={evaluator.id || index}>
+                      <td>{evaluator.name || "Невідомий"}</td>
+                      <td>{answer ? answer.responses["1"]?.value || "–" : "–"}</td>
+                      <td>{answer ? answer.responses["2"]?.value || "–" : "–"}</td>
+                    </tr>
+                  );
+                })
             ) : (
               <tr>
                 <td colSpan="3">Немає оцінок</td>
@@ -54,19 +60,18 @@ function UserModal({ user, answers, users, onClose }) {
             )}
           </tbody>
         </table>
-        <div className="comments-section">
+        <div className={styles.commentsSection}>
           <h3>Коментарі</h3>
           {userAnswers.some((a) => a.responses["3"]?.comment) ? (
             userAnswers
               .filter((a) => a.responses["3"]?.comment)
               .map((answer, index) => {
                 const evaluator = users.find(
-                  (u) => u.name === answer.evaluator_name
+                  (u) => u.name.trim().toLowerCase() === answer.evaluator_name.trim().toLowerCase()
                 );
                 return (
-                  <div key={index} className="comment">
-                    <strong>{evaluator?.name || "Невідомий"}:</strong>{" "}
-                    {answer.responses["3"].comment}
+                  <div key={index} className={styles.comment}>
+                    <strong>{evaluator?.name || "Невідомий"}:</strong> {answer.responses["3"].comment}
                   </div>
                 );
               })

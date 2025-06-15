@@ -12,7 +12,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore";
-import "./stylesQuestionsPage.css";
+import styles from "./QuestionsPage.module.css";
 
 export default function QuestionsPage() {
   const { userName } = useParams();
@@ -37,7 +37,6 @@ export default function QuestionsPage() {
             reset_needed: false,
             participantsSubmitted: 0,
             totalParticipants: 0,
-            allSubmitted: false,
           });
         }
         const statusData = statusSnap.data();
@@ -47,33 +46,28 @@ export default function QuestionsPage() {
         }
 
         const q = query(collection(db, "users"));
-        unsubscribeUsers = onSnapshot(q, (snapshot) => {
-          const playersData = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-          setPlayers(playersData);
-          setCurrentUser(playersData.find((p) => p.name === userName));
+        onSnapshot(
+          q,
+          (snapshot) => {
+            const playersData = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+            setPlayers(playersData);
+            setCurrentUser(playersData.find((p) => p.name === userName));
 
-          const firstTarget = playersData.find((p) => p.name !== userName);
-          setCurrentTarget(firstTarget);
-          setIsExpanded(false);
-
-          // Fallback: Check if all users have submitted
-          const allUsersSubmitted = playersData.every((p) => p.submitted === true);
-          if (allUsersSubmitted && playersData.length > 0) {
-            console.log("All users have submitted: Triggering allSubmitted");
-            updateDoc(statusDoc, { allSubmitted: true }).catch((err) =>
-              console.error("Error setting allSubmitted in fallback:", err)
-            );
+            const firstTarget = playersData.find((p) => p.name !== userName);
+            setCurrentTarget(firstTarget);
+            setIsExpanded(false);
+          },
+          (err) => {
+            setError("Помилка завантаження гравців: " + err.message);
+            console.error("Ошибка загрузки игроков:", err);
           }
-        }, (err) => {
-          setError("Помилка завантаження гравців: " + err.message);
-          console.error("Ошибка загрузки игроков:", err);
-        });
+        );
       } catch (err) {
         setError("Помилка завантаження: " + err.message);
-        console.error("Error in fetchInitialData:", err);
+        console.error("Ошибка при загрузке данных:", err);
       } finally {
         setIsLoading(false);
       }
@@ -85,39 +79,60 @@ export default function QuestionsPage() {
       collection(db, "answers"),
       where("evaluator_name", "==", userName)
     );
-    const unsubscribeAnswers = onSnapshot(answersQuery, (snapshot) => {
-      const answersData = {};
-      snapshot.forEach((doc) => {
-        const data = doc.data();
-        answersData[data.target_id] = data.responses || {};
-      });
-      setAnswers(answersData);
-    }, (err) => {
-      setError("Помилка завантаження відповідей: " + err.message);
-      console.error("Ошибка загрузки ответов:", err);
-    });
+    const unsubscribeAnswers = onSnapshot(
+      answersQuery,
+      (snapshot) => {
+        const answersData = {};
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          answersData[data.target_id] = data.responses || {};
+        });
+        setAnswers(answersData);
+      },
+      (err) => {
+        setError("Помилка завантаження відповідей: " + err.message);
+        console.error("Ошибка загрузки ответов:", err);
+      }
+    );
 
     const statusDoc = doc(db, "test_status", "status");
-    const unsubscribeStatus = onSnapshot(statusDoc, (snapshot) => {
-      const statusData = snapshot.data();
-      console.log("test_status:", statusData);
-      if (statusData?.allSubmitted) {
-        console.log("allSubmitted is true: Navigating to /graph");
-        navigate("/graph");
-      }
-    }, (err) => {
-      console.error("Error in statusListener:", err);
-    });
+    const unsubscribeStatus = onSnapshot(
+      statusDoc,
+      (snapshot) => {
+        const statusData = snapshot.data();
+        if (!statusData) {
+          console.warn("test_status/status document is missing");
+          return;
+        }
+        const totalParticipants = statusData.totalParticipants || 0;
+        const submittedCount = statusData.participantsSubmitted || 0;
 
-    let unsubscribeUsers = null;
+        if (
+          totalParticipants > 0 &&
+          submittedCount >= totalParticipants * (totalParticipants - 1)
+        ) {
+          navigate("/graph");
+        }
+      },
+      (err) => {
+        console.error("Ошибка отслеживания статуса теста:", err);
+        setError("Помилка статусу тесту: " + err.message);
+      }
+    );
+
     return () => {
-      if (unsubscribeAnswers) unsubscribeAnswers();
-      if (unsubscribeStatus) unsubscribeStatus();
-      if (unsubscribeUsers) unsubscribeUsers();
+      unsubscribeAnswers();
+      unsubscribeStatus();
     };
   }, [userName, navigate]);
 
-  const handleAnswerChange = (targetId, questionIndex, value, comment, willingToCommunicate) => {
+  const handleAnswerChange = (
+    targetId,
+    questionIndex,
+    value,
+    comment,
+    willingToCommunicate
+  ) => {
     setAnswers((prev) => ({
       ...prev,
       [targetId]: {
@@ -135,23 +150,36 @@ export default function QuestionsPage() {
   const handleSubmit = async (targetId) => {
     setIsLoading(true);
     try {
-      const willingToRespond = answers[targetId]?.['0']?.willingToCommunicate;
-      if (willingToRespond === undefined) {
-        setError("Оберіть 'Так' або 'Ні'");
+      const willingToCommunicate =
+        answers[targetId]?.["0"]?.willingToCommunicate;
+      if (willingToCommunicate === undefined) {
+        setError("Оберіть 'Так' або 'Ні' перед відправкою");
         return;
       }
 
       const statusDoc = doc(db, "test_status", "status");
       const statusSnap = await getDoc(statusDoc);
-      const statusData = statusSnap.data() || {};
+      const statusData = statusSnap.data() || { participantsSubmitted: 0 };
 
       const answerDocRef = doc(collection(db, "answers"));
       const responses = {};
       for (let i = 0; i < 4; i++) {
-        const answer = answers[targetId]?.[`${i}`] || { value: 0, comment: "", willingToCommunicate: false };
+        const answer = answers[targetId]?.[`${i}`] || {
+          value: 0,
+          comment: "",
+          willingToCommunicate: false,
+        };
         responses[`${i}`] = {
-          value: i === 0 ? (answer.willingToCommunicate ? 1 : 0) : (answer.value || 0),
-          comment: i === 3 ? (answer.comment || "") : "",
+          value:
+            i === 0
+              ? answer.willingToCommunicate
+                ? 1
+                : 0
+              : answer.value !== undefined
+              ? answer.value
+              : 0,
+          comment:
+            i === 3 ? (answer.comment !== undefined ? answer.comment : "") : "",
         };
         if (i === 0) {
           responses[`${i}`].willingToCommunicate = answer.willingToCommunicate;
@@ -167,21 +195,8 @@ export default function QuestionsPage() {
 
       const userDoc = doc(db, "users", currentUser.id);
       await updateDoc(userDoc, { submitted: true });
-
-      const submittedCount = (statusData.participantsSubmitted || 0) + 1;
-      const totalExpected = statusData.totalParticipants * (statusData.totalParticipants - 1);
-      console.log(
-        `Submission: submittedCount=${submittedCount}, totalExpected=${totalExpected}, totalParticipants=${statusData.totalParticipants}`
-      );
-
-      // Update participantsSubmitted
+      const submittedCount = statusData.participantsSubmitted + 1;
       await updateDoc(statusDoc, { participantsSubmitted: submittedCount });
-
-      // Check if all submissions are complete
-      if (submittedCount >= totalExpected) {
-        console.log("All submissions complete: setting allSubmitted to true");
-        await updateDoc(statusDoc, { allSubmitted: true });
-      }
 
       const currentTargets = players.filter((p) => p.name !== userName);
       const currentIndex = currentTargets.findIndex((p) => p.id === targetId);
@@ -194,7 +209,7 @@ export default function QuestionsPage() {
       }
     } catch (err) {
       setError("Помилка відправки відповідей: " + err.message);
-      console.error("Error in handleSubmit:", err);
+      console.error("Ошибка отправки ответов:", err);
     } finally {
       setIsLoading(false);
     }
@@ -210,67 +225,87 @@ export default function QuestionsPage() {
         },
       ]
     : [];
-  const additionalQuestions = targetPlayer && answers[targetPlayer.id]?.['0']?.willingToCommunicate
-    ? [
-        {
-          text: `Як часто ви комунікуєте з ${targetPlayer.name}?`,
-          type: "int",
-          options: [1, 2, 3, 4, 5],
-        },
-        {
-          text: `Наскільки ефективна для вас комунікація з ${targetPlayer.name}?`,
-          type: "int",
-          options: [1, 2, 3, 4, 5],
-        },
-        {
-          text: `Залишити коментар`,
-          type: "str",
-        },
-      ]
-    : [];
+  const additionalQuestions =
+    targetPlayer && answers[targetPlayer.id]?.["0"]?.willingToCommunicate
+      ? [
+          {
+            text: `Як часто ви комунікуєте з ${targetPlayer.name}?`,
+            type: "int",
+            options: [1, 2, 3, 4, 5],
+          },
+          {
+            text: `Наскільки ефективна для вас комунікація з ${targetPlayer.name}?`,
+            type: "int",
+            options: [1, 2, 3, 4, 5],
+          },
+          {
+            text: `Залишити коментар`,
+            type: "str",
+          },
+        ]
+      : [];
 
   return (
-    <div className="questions-page">
-      <div className="bubbles" id="bubbles"></div>
-      <div className={`form-container ${isExpanded ? 'expanded' : ''}`}>
-        <h1 className="form-heading">
-          Оцінка гравців, <span className="username">{userName}</span>
+    <div className={styles.questionsPage}>
+      <div className={styles.bubbles} id="bubbles"></div>
+      <div className={`${styles.formContainer} ${isExpanded ? styles.expanded : ""}`}>
+        <h1 className={styles.formHeading}>
+          Оцінка гравців, <span className={styles.username}>{userName}</span>
         </h1>
         {isLoading ? (
           <p>Завантаження...</p>
         ) : error ? (
-          <p className="error-message">{error}</p>
+          <p className={styles.errorMessage}>{error}</p>
         ) : !targetPlayer ? (
           <p>Всі ваші відповіді відправлено. Очікування завершення іншими...</p>
         ) : (
-          <div className="players-list">
+          <div className={styles.playersList}>
             {[...questions, ...additionalQuestions].map((question, index) => (
-              <div key={index} className="list-item">
+              <div key={index} className={styles.listItem}>
                 <label>{question.text}</label>
                 {question.type === "boolean" ? (
-                  <div className="button-group">
+                  <div className={styles.buttonGroup}>
                     {question.options.map((option, optIndex) => (
                       <button
                         key={optIndex}
-                        onClick={() => handleAnswerChange(targetPlayer.id, index, 0, "", option === "Так")}
-                        className={`option-btn boolean ${answers[targetPlayer.id]?.['0']?.willingToCommunicate === (option === "Так") ? "selected" : ""}`}
+                        onClick={() =>
+                          handleAnswerChange(
+                            targetPlayer.id,
+                            index,
+                            0,
+                            "",
+                            option === "Так"
+                          )
+                        }
+                        className={`${styles.optionBtn} ${styles.boolean} ${
+                          answers[targetPlayer.id]?.["0"]?.willingToCommunicate ===
+                          (option === "Так")
+                            ? styles.selected
+                            : ""
+                        }`}
                       >
                         {option}
                       </button>
                     ))}
                   </div>
                 ) : question.type === "int" ? (
-                  <div className="button-group">
+                  <div className={styles.buttonGroup}>
                     {question.options.map((value) => (
                       <button
                         key={value}
-                        onClick={() => handleAnswerChange(
-                          targetPlayer.id,
-                          index,
-                          value,
-                          answers[targetPlayer.id]?.[`${index}`]?.comment || ""
-                        )}
-                        className={`option-btn ${answers[targetPlayer.id]?.[`${index}`]?.value === value ? "selected" : ""}`}
+                        onClick={() =>
+                          handleAnswerChange(
+                            targetPlayer.id,
+                            index,
+                            value,
+                            answers[targetPlayer.id]?.[`${index}`]?.comment || ""
+                          )
+                        }
+                        className={`${styles.optionBtn} ${
+                          answers[targetPlayer.id]?.[`${index}`]?.value === value
+                            ? styles.selected
+                            : ""
+                        }`}
                       >
                         {value}
                       </button>
@@ -288,7 +323,7 @@ export default function QuestionsPage() {
                         e.target.value
                       )
                     }
-                    className="input-item"
+                    className={styles.inputItem}
                     placeholder="Коментар"
                   />
                 )}
@@ -296,7 +331,10 @@ export default function QuestionsPage() {
             ))}
             <button
               onClick={() => handleSubmit(targetPlayer.id)}
-              disabled={isLoading || answers[targetPlayer.id]?.['0']?.willingToCommunicate === undefined}
+              disabled={
+                isLoading ||
+                answers[targetPlayer.id]?.["0"]?.willingToCommunicate === undefined
+              }
             >
               {isLoading ? "Відправка..." : "Відправити"}
             </button>
