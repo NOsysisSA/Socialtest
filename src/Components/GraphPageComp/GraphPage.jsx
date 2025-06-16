@@ -187,57 +187,57 @@ function GraphPage() {
       console.log("UsersCollection path:", usersCollection.path);
 
       // Delete answers
-      const answersQuery = query(answersCollection);
-      const answersSnapshot = await getDocs(answersQuery);
-      console.log("Answers snapshot size:", answersSnapshot.size);
-      for (const docSnap of answersSnapshot.docs) {
-        if (!docSnap.ref) {
-          console.warn("Invalid answer document reference:", docSnap.id);
-          continue;
-        }
-        console.log("Deleting answer:", docSnap.ref.path);
-        await deleteDoc(docSnap.ref);
-      }
+      // const answersQuery = query(answersCollection);
+      // const answersSnapshot = await getDocs(answersQuery);
+      // console.log("Answers snapshot size:", answersSnapshot.size);
+      // for (const docSnap of answersSnapshot.docs) {
+      //   if (!docSnap.ref) {
+      //     console.warn("Invalid answer document reference:", docSnap.id);
+      //     continue;
+      //   }
+      //   console.log("Deleting answer:", docSnap.ref.path);
+      //   await deleteDoc(docSnap.ref);
+      // }
 
       // Update users
-      const usersQuery = query(usersCollection);
-      const usersSnapshot = await getDocs(usersQuery);
-      console.log("Users snapshot size:", usersSnapshot.size);
-      for (const docSnap of usersSnapshot.docs) {
-        if (!docSnap.ref) {
-          console.warn("Invalid user document reference:", docSnap.id);
-          continue;
-        }
-        console.log("Updating user:", docSnap.ref.path);
-        await updateDoc(docSnap.ref, { submitted: false });
-      }
+      // const usersQuery = query(usersCollection);
+      // const usersSnapshot = await getDocs(usersQuery);
+      // console.log("Users snapshot size:", usersSnapshot.size);
+      // for (const docSnap of usersSnapshot.docs) {
+      //   if (!docSnap.ref) {
+      //     console.warn("Invalid user document reference:", docSnap.id);
+      //     continue;
+      //   }
+      //   console.log("Updating user:", docSnap.ref.path);
+      //   await updateDoc(docSnap.ref, { submitted: false });
+      // }
 
       // Reset status
-      console.log("Checking status document:", statusDoc.path);
-      const statusSnapshot = await getDocs(query(collection(db, "tests", testId, "status")));
-      if (statusSnapshot.docs.some((d) => d.id === "status")) {
-        console.log("Updating status document");
-        await updateDoc(statusDoc, {
-          started: false,
-          participantsSubmitted: 0,
-          totalParticipants: 0,
-          allSubmitted: false,
-          reset_needed: false,
-        });
-      } else {
-        console.log("Setting new status document");
-        await setDoc(statusDoc, {
-          started: false,
-          participantsSubmitted: 0,
-          totalParticipants: 0,
-          allSubmitted: false,
-          reset_needed: false,
-        });
-      }
+      // console.log("Checking status document:", statusDoc.path);
+      // const statusSnapshot = await getDocs(query(collection(db, "tests", testId, "status")));
+      // if (statusSnapshot.docs.some((d) => d.id === "status")) {
+      //   console.log("Updating status document");
+      //   await updateDoc(statusDoc, {
+      //     started: false,
+      //     participantsSubmitted: 0,
+      //     totalParticipants: 0,
+      //     allSubmitted: false,
+      //     reset_needed: false,
+      //   });
+      // } else {
+      //   console.log("Setting new status document");
+      //   await setDoc(statusDoc, {
+      //     started: false,
+      //     participantsSubmitted: 0,
+      //     totalParticipants: 0,
+      //     allSubmitted: false,
+      //     reset_needed: false,
+      //   });
+      // }
 
       console.log("Reset completed successfully");
       localStorage.clear();
-      navigate("/create-test");
+      navigate("/");
     } catch (err) {
       console.error("Ошибка при сбросе:", err);
       setError(`Помилка при сбросі: ${err.message}`);
