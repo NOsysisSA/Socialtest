@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { db } from "../../firebase";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { collection, query, orderBy, onSnapshot, doc } from "firebase/firestore";
 import { useBubbles } from "../Bubbles/useBubbles";
 import styles from "./TestListPage.module.css";
 
@@ -13,15 +13,57 @@ export default function TestListPage() {
 
   useEffect(() => {
     const q = query(collection(db, "tests"), orderBy("created_at", "desc"));
-    const unsubscribe = onSnapshot(
+    const unsubscribeTests = onSnapshot(
       q,
       (snapshot) => {
         const testsData = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
+          status: "Online", // Initial status
         }));
         setTests(testsData);
+
+        // Set up real-time listeners for each test's status
+        const statusUnsubscribes = testsData.map((test) => {
+          const statusDocRef = doc(db, "tests", test.id, "status", "status");
+          return onSnapshot(
+            statusDocRef,
+            (statusSnap) => {
+              let status = "Online";
+              if (statusSnap.exists()) {
+                const statusData = statusSnap.data();
+                if (statusData.started) {
+                  const totalParticipants = statusData.totalParticipants || 0;
+                  const participantsSubmitted = statusData.participantsSubmitted || 0;
+                  if (
+                    totalParticipants > 0 &&
+                    participantsSubmitted >= totalParticipants * (totalParticipants - 1)
+                  ) {
+                    status = "Completed";
+                  } else {
+                    status = "Active";
+                  }
+                }
+              }
+              setTests((prevTests) =>
+                prevTests.map((t) =>
+                  t.id === test.id ? { ...t, status } : t
+                )
+              );
+            },
+            (error) => {
+              console.error(`Error fetching status for test ${test.id}:`, error);
+            }
+          );
+        });
+
+        // Set loading to false after initial tests load
         setLoading(false);
+
+        // Cleanup status listeners when tests change or component unmounts
+        return () => {
+          statusUnsubscribes.forEach((unsubscribe) => unsubscribe());
+        };
       },
       (error) => {
         console.error("Error fetching tests:", error);
@@ -30,11 +72,16 @@ export default function TestListPage() {
       }
     );
 
-    return () => unsubscribe();
+    // Cleanup tests listener on unmount
+    return () => unsubscribeTests();
   }, []);
 
-  const handleSelectTest = (testId) => {
-    navigate(`/join/${testId}`);
+  const handleSelectTest = (testId, status) => {
+    if (status === "Completed") {
+      navigate(`/graph/${testId}`);
+    } else {
+      navigate(`/join/${testId}`);
+    }
   };
 
   return (
@@ -52,9 +99,18 @@ export default function TestListPage() {
               <div
                 key={test.id}
                 className={styles.testItem}
-                onClick={() => handleSelectTest(test.id)}
+                onClick={() => handleSelectTest(test.id, test.status)}
               >
-                <span>{test.testName}</span>
+                <div className={styles.testInfo}>
+                  <span className={styles.testName}>{test.testName}</span>
+                  <span className={`${styles.statusBadge} ${styles[test.status.toLowerCase()]}`}>
+                    {test.status === "Online"
+                      ? "Онлайн"
+                      : test.status === "Active"
+                      ? "В процесі"
+                      : "Завершено"}
+                  </span>
+                </div>
                 <span className={styles.testDate}>
                   {test.created_at?.toDate().toLocaleString()}
                 </span>

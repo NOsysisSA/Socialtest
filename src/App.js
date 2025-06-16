@@ -6,6 +6,7 @@ import LobbyPage from "./Components/LobbyPageComp/LobbyPage";
 import QuestionsPage from "./Components/QuestionsPageComp/QuestionsPage";
 import GraphPage from "./Components/GraphPageComp/GraphPage";
 
+
 function App() {
   return (
     <Routes>

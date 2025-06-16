@@ -89,6 +89,46 @@
   transform: translateX(5px);
 }
 
+.testInfo {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex: 1;
+}
+
+.testName {
+  font-size: 1rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+.statusBadge.online {
+  background: #1a3c34;
+  color: #a0d8b3;
+}
+
+.statusBadge.active {
+  background: #4a6fa5;
+  color: #e0e0e0;
+}
+
+.statusBadge.completed {
+  background: #6b2d3c;
+  color: #e0e0e0;
+}
+
+.statusBadge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .testDate {
   font-size: 0.85rem;
   color: #a0a0a0;
@@ -131,6 +171,20 @@ button:active {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .testInfo {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .testName {
+    font-size: 0.9rem;
+  }
+
+  .statusBadge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
   }
 
   .testDate {
