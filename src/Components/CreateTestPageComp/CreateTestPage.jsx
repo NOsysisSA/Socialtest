@@ -45,7 +45,7 @@ export default function CreateTestPage() {
         <input
           className={styles.inputItem}
           type="text"
-          placeholder="Назва тесту (наприклад, Команда A – Июнь)"
+          placeholder="Назва тесту (наприклад, Команда A – червень 2025)"
           value={testName}
           onChange={(e) => setTestName(e.target.value)}
           disabled={loading}
