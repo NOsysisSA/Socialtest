@@ -14,6 +14,7 @@ import {
 } from "firebase/firestore";
 import chroma from "chroma-js";
 import UserModal from "../UserModalComp/UserModal";
+import SummaryTable from "../SummaryTable/SummaryTable"; 
 import { useBubbles } from "../Bubbles/useBubbles";
 import styles from "./GraphPage.module.css";
 
@@ -27,6 +28,10 @@ function GraphPage() {
   const [answers, setAnswers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [error, setError] = useState(null);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [password, setPassword] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [showSummary, setShowSummary] = useState(false);
   useBubbles();
 
   useEffect(() => {
@@ -176,66 +181,15 @@ function GraphPage() {
         throw new Error("Test ID is undefined");
       }
 
-      console.log("Starting reset for testId:", testId);
-
       const statusDoc = doc(db, "tests", testId, "status", "status");
-      const answersCollection = collection(db, "tests", testId, "answers");
-      const usersCollection = collection(db, "tests", testId, "users");
+      await updateDoc(statusDoc, {
+        started: false,
+        participantsSubmitted: 0,
+        totalParticipants: 0,
+        allSubmitted: false,
+        reset_needed: false,
+      });
 
-      console.log("StatusDoc path:", statusDoc.path);
-      console.log("AnswersCollection path:", answersCollection.path);
-      console.log("UsersCollection path:", usersCollection.path);
-
-      // Delete answers
-      // const answersQuery = query(answersCollection);
-      // const answersSnapshot = await getDocs(answersQuery);
-      // console.log("Answers snapshot size:", answersSnapshot.size);
-      // for (const docSnap of answersSnapshot.docs) {
-      //   if (!docSnap.ref) {
-      //     console.warn("Invalid answer document reference:", docSnap.id);
-      //     continue;
-      //   }
-      //   console.log("Deleting answer:", docSnap.ref.path);
-      //   await deleteDoc(docSnap.ref);
-      // }
-
-      // Update users
-      // const usersQuery = query(usersCollection);
-      // const usersSnapshot = await getDocs(usersQuery);
-      // console.log("Users snapshot size:", usersSnapshot.size);
-      // for (const docSnap of usersSnapshot.docs) {
-      //   if (!docSnap.ref) {
-      //     console.warn("Invalid user document reference:", docSnap.id);
-      //     continue;
-      //   }
-      //   console.log("Updating user:", docSnap.ref.path);
-      //   await updateDoc(docSnap.ref, { submitted: false });
-      // }
-
-      // Reset status
-      // console.log("Checking status document:", statusDoc.path);
-      // const statusSnapshot = await getDocs(query(collection(db, "tests", testId, "status")));
-      // if (statusSnapshot.docs.some((d) => d.id === "status")) {
-      //   console.log("Updating status document");
-      //   await updateDoc(statusDoc, {
-      //     started: false,
-      //     participantsSubmitted: 0,
-      //     totalParticipants: 0,
-      //     allSubmitted: false,
-      //     reset_needed: false,
-      //   });
-      // } else {
-      //   console.log("Setting new status document");
-      //   await setDoc(statusDoc, {
-      //     started: false,
-      //     participantsSubmitted: 0,
-      //     totalParticipants: 0,
-      //     allSubmitted: false,
-      //     reset_needed: false,
-      //   });
-      // }
-
-      console.log("Reset completed successfully");
       localStorage.clear();
       navigate("/");
     } catch (err) {
@@ -243,6 +197,21 @@ function GraphPage() {
       setError(`Помилка при сбросі: ${err.message}`);
     }
   }
+
+  const handleSummaryClick = () => {
+    setShowPasswordModal(true);
+    setPassword("");
+    setPasswordError("");
+  };
+
+  const handlePasswordSubmit = () => {
+    if (password === "admin") {
+      setShowPasswordModal(false);
+      setShowSummary(true);
+    } else {
+      setPasswordError("Невірний пароль");
+    }
+  };
 
   return (
     <div className={styles.graphPage}>
@@ -296,6 +265,11 @@ function GraphPage() {
               ⬅ Повернутися на головну
             </button>
           </div>
+          <div className={`${styles.formContainer} ${styles.summaryButton}`}>
+            <button className={styles.summaryButton} onClick={handleSummaryClick}>
+              Загальний результат
+            </button>
+          </div>
           {error && <p className={styles.errorMessage}>{error}</p>}
           {selectedUser && (
             <UserModal
@@ -303,6 +277,37 @@ function GraphPage() {
               answers={answers}
               users={users}
               onClose={() => setSelectedUser(null)}
+            />
+          )}
+          {showPasswordModal && (
+            <div className={styles.modalOverlay}>
+              <div className={styles.modalContent}>
+                <button
+                  className={styles.closeButton}
+                  onClick={() => setShowPasswordModal(false)}
+                >
+                  ×
+                </button>
+                <h2 className={styles.modalHeading}>Введіть пароль</h2>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className={styles.inputItem}
+                  placeholder="Пароль"
+                />
+                {passwordError && (
+                  <p className={styles.errorMessage}>{passwordError}</p>
+                )}
+                <button onClick={handlePasswordSubmit}>Підтвердити</button>
+              </div>
+            </div>
+          )}
+          {showSummary && (
+            <SummaryTable
+              users={users}
+              answers={answers}
+              onClose={() => setShowSummary(false)}
             />
           )}
         </>

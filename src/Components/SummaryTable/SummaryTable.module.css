@@ -1,0 +1,132 @@
+/* Components/SummaryTableComp/SummaryTable.module.css */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modalContent {
+  background: #1e1e1e;
+  padding: 2rem;
+  border-radius: 16px;
+  max-width: 800px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  position: relative;
+  font-family: 'Inter', sans-serif;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.closeButton {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: #6b2d3c;
+  color: #e0e0e0;
+  border: none;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease, transform 0.2s ease;
+}
+
+.closeButton:hover {
+  background: #532229;
+  transform: scale(1.1);
+}
+
+.closeButton:active {
+  transform: scale(0.9);
+}
+
+.modalHeading {
+  font-size: 1.75rem;
+  color: #e0e0e0;
+  margin-bottom: 1.5rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.evaluationsTable {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.evaluationsTable th,
+.evaluationsTable td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #4a4a4a;
+}
+
+.evaluationsTable th {
+  background: #2a2a2a;
+  font-weight: 600;
+  color: #e0e0e0;
+}
+
+.evaluationsTable td {
+  color: #a0a0a0;
+}
+
+.chartContainer {
+  margin-top: 1.5rem;
+  background: #2a2a2a;
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .modalContent {
+    padding: 1.5rem;
+    width: 95%;
+  }
+
+  .modalHeading {
+    font-size: 1.5rem;
+  }
+
+  .evaluationsTable th,
+  .evaluationsTable td {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+
+  .chartContainer {
+    padding: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1024px) {
+  .modalContent {
+    max-width: 700px;
+  }
+
+  .modalHeading {
+    font-size: 1.75rem;
+  }
+}
